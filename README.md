@@ -18,6 +18,32 @@ This project uses UV for package management. Install dependencies with:
 uv sync
 ```
 
+### Activating the UV Environment
+
+UV automatically manages virtual environments, but you can activate the environment in your shell for direct access to installed packages:
+
+```bash
+# Activate the UV environment in your current shell
+source .venv/bin/activate
+
+# Or use uv shell (if available in your uv version)
+uv shell
+
+# Run commands directly with uv (recommended approach)
+uv run python your_script.py
+uv run pytest
+```
+
+When the environment is activated, your shell prompt will typically show `(.venv)` at the beginning, indicating you're working within the virtual environment.
+
+To deactivate the environment:
+
+```bash
+deactivate
+```
+
+**Note**: The recommended approach is to use `uv run` commands rather than activating the environment manually, as this ensures you're always using the correct environment and dependencies.
+
 ## Usage
 
 ### Basic Example
