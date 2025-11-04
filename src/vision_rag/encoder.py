@@ -5,6 +5,9 @@ import numpy as np
 from PIL import Image
 from sentence_transformers import SentenceTransformer
 
+# Default image size for dummy images (OrganSMNIST dataset dimensions)
+DEFAULT_IMAGE_SIZE = 28
+
 
 class CLIPImageEncoder:
     """Image encoder using CLIP ViT-B-32 model."""
@@ -61,4 +64,14 @@ class CLIPImageEncoder:
     @property
     def embedding_dimension(self) -> int:
         """Get the dimension of the embedding vectors."""
-        return self.model.get_sentence_embedding_dimension()
+        # Try to get dimension from model first
+        dimension = self.model.get_sentence_embedding_dimension()
+        if dimension is not None:
+            return dimension
+        
+        # If not available, encode a dummy image to get the dimension
+        dummy_image = Image.fromarray(
+            np.zeros((DEFAULT_IMAGE_SIZE, DEFAULT_IMAGE_SIZE), dtype=np.uint8), mode='L'
+        )
+        embedding = self.model.encode(dummy_image)
+        return embedding.shape[0]
