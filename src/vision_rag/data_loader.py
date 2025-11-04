@@ -1,6 +1,5 @@
 """Data loading module for OrganSMNIST dataset."""
 
-import os
 from pathlib import Path
 from typing import Tuple
 import numpy as np
