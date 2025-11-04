@@ -61,4 +61,12 @@ class CLIPImageEncoder:
     @property
     def embedding_dimension(self) -> int:
         """Get the dimension of the embedding vectors."""
-        return self.model.get_sentence_embedding_dimension()
+        # Try to get dimension from model first
+        dimension = self.model.get_sentence_embedding_dimension()
+        if dimension is not None:
+            return dimension
+        
+        # If not available, encode a dummy image to get the dimension
+        dummy_image = Image.fromarray(np.zeros((28, 28), dtype=np.uint8), mode='L')
+        embedding = self.model.encode(dummy_image)
+        return embedding.shape[0]

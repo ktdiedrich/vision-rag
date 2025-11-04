@@ -57,11 +57,11 @@ from vision_rag import (
     ImageSearcher,
 )
 
-# Download dataset
-download_organmnist(root="./data")
+# Download dataset (uses permanent data directory by default)
+download_organmnist()
 
-# Load training data
-train_images, train_labels = load_organmnist_data(split="train", root="./data")
+# Load training data (automatically downloads if not present)
+train_images, train_labels = load_organmnist_data(split="train")
 
 # Initialize encoder
 encoder = CLIPImageEncoder(model_name="clip-ViT-B-32")
