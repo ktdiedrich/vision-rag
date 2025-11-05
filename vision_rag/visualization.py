@@ -200,9 +200,9 @@ class RAGVisualizer:
         ax.set_title(query_title, fontsize=10, fontweight='bold', color='red')
         ax.set_xticks([])
         ax.set_yticks([])
-        ax.add_patch(plt.Rectangle((0, 0), query_image.shape[1] if isinstance(query_image, np.ndarray) else query_image.width, 
-                                  query_image.shape[0] if isinstance(query_image, np.ndarray) else query_image.height, 
-                                  fill=False, edgecolor='red', linewidth=3))
+        width = query_image.shape[1] if isinstance(query_image, np.ndarray) else query_image.width
+        height = query_image.shape[0] if isinstance(query_image, np.ndarray) else query_image.height
+        ax.add_patch(plt.Rectangle((0, 0), width, height, fill=False, edgecolor='red', linewidth=3))
         
         # Display retrieved images
         for i, (img, metadata, dist) in enumerate(zip(retrieved_images, retrieved_metadata, distances)):
