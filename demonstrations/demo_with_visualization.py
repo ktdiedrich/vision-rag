@@ -10,7 +10,6 @@ This script demonstrates the full pipeline:
 """
 
 import numpy as np
-from pathlib import Path
 
 from vision_rag import (
     download_organmnist,
