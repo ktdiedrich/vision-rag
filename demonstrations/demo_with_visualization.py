@@ -12,7 +12,6 @@ This script demonstrates the full pipeline:
 import numpy as np
 
 from vision_rag import (
-    download_organmnist,
     load_organmnist_data,
     get_image_from_array,
     CLIPImageEncoder,
