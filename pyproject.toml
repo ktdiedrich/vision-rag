@@ -16,3 +16,6 @@ dependencies = [
     "seaborn>=0.13.0",
     "sentence-transformers>=5.1.2",
 ]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]

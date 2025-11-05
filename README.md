@@ -165,7 +165,7 @@ Run the comprehensive demonstration:
 
 ```bash
 # Full demonstration with all visualizations
-cd demonstrations && PYTHONPATH=../src uv run python demo_with_visualization.py
+cd demonstrations && PYTHONPATH=.. uv run python demo_with_visualization.py
 
 # Simple example
 cd demonstrations && uv run python simple_visualization_example.py
@@ -175,14 +175,13 @@ cd demonstrations && uv run python simple_visualization_example.py
 
 ```
 vision-rag/
-├── src/
-│   └── vision_rag/
-│       ├── __init__.py
-│       ├── data_loader.py       # OrganSMNIST dataset loading
-│       ├── encoder.py           # CLIP image encoder
-│       ├── rag_store.py         # ChromaDB RAG store
-│       ├── search.py            # Image search functionality
-│       └── visualization.py     # Visualization utilities
+├── vision_rag/
+│   ├── __init__.py
+│   ├── data_loader.py       # OrganSMNIST dataset loading
+│   ├── encoder.py           # CLIP image encoder
+│   ├── rag_store.py         # ChromaDB RAG store
+│   ├── search.py            # Image search functionality
+│   └── visualization.py     # Visualization utilities
 ├── demonstrations/
 │   ├── demo_with_visualization.py    # Comprehensive demonstration
 │   └── simple_visualization_example.py  # Simple example

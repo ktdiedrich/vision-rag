@@ -12,8 +12,8 @@ import numpy as np
 from pathlib import Path
 import sys
 
-# Add src to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+# Add parent directory to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from vision_rag import (
     load_organmnist_data,

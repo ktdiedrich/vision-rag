@@ -31,7 +31,7 @@ Comprehensive demonstration with full analysis:
 
 **Run:**
 ```bash
-PYTHONPATH=../src uv run python demo_with_visualization.py
+PYTHONPATH=.. uv run python demo_with_visualization.py
 ```
 
 **Output:** Creates `visualizations/` directory with:
