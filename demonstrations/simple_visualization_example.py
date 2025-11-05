@@ -17,6 +17,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from vision_rag import (
     load_organmnist_data,
     get_image_from_array,
+    get_human_readable_label,
     CLIPImageEncoder,
     ChromaRAGStore,
     ImageSearcher,
@@ -88,7 +89,8 @@ def main():
     print("\n🎯 Step 4: Performing searches and visualizing results...")
     
     for i, (query_img, query_label) in enumerate(zip(query_images[:3], query_labels[:3])):
-        print(f"\n  Search {i+1}: Query with label {query_label}")
+        query_name = get_human_readable_label(query_label)
+        print(f"\n  Search {i+1}: Query with label {query_label} ({query_name})")
         
         # Perform search
         results = searcher.search(query_img, n_results=5)
@@ -109,14 +111,15 @@ def main():
             retrieved_metadata=results['metadatas'],
             distances=results['distances'],
             filename=f"search_results_{i+1}.png",
-            title=f"Search Results {i+1}: Query Label {query_label}"
+            title=f"Search Results {i+1}: {query_name} ({query_label})"
         )
         print(f"  ✅ Saved: {results_path}")
         
         # Print summary
         retrieved_labels = [meta['label'] for meta in results['metadatas']]
+        retrieved_names = [get_human_readable_label(label) for label in retrieved_labels]
         distances = [f"{d:.3f}" for d in results['distances']]
-        print(f"  Retrieved labels: {retrieved_labels}")
+        print(f"  Retrieved: {[f'{name} ({label})' for name, label in zip(retrieved_names, retrieved_labels)]}")
         print(f"  Distances: {distances}")
     
     print(f"\n🎉 Example complete!")

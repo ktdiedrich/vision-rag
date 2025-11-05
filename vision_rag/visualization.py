@@ -8,6 +8,8 @@ import seaborn as sns
 from PIL import Image
 import pandas as pd
 
+from .data_loader import get_human_readable_label
+
 
 class RAGVisualizer:
     """Visualizer for RAG system inputs and outputs."""
@@ -72,7 +74,8 @@ class RAGVisualizer:
                 
                 # Add label if available
                 if labels is not None:
-                    ax.set_title(f'Label: {labels[i]}', fontsize=10)
+                    human_label = get_human_readable_label(labels[i])
+                    ax.set_title(f'{human_label} ({labels[i]})', fontsize=10)
             else:
                 ax.axis('off')
             
@@ -135,7 +138,8 @@ class RAGVisualizer:
                     ax.imshow(img, cmap='gray' if img.mode == 'L' else None)
                 
                 if labels is not None:
-                    ax.set_title(f'Query {i+1}\nLabel: {labels[i]}', fontsize=10)
+                    human_label = get_human_readable_label(labels[i])
+                    ax.set_title(f'Query {i+1}\n{human_label} ({labels[i]})', fontsize=10)
                 else:
                     ax.set_title(f'Query {i+1}', fontsize=10)
             else:
@@ -195,7 +199,8 @@ class RAGVisualizer:
         
         query_title = "Query"
         if query_label is not None:
-            query_title += f"\nLabel: {query_label}"
+            human_label = get_human_readable_label(query_label)
+            query_title += f"\n{human_label} ({query_label})"
         ax.set_title(query_title, fontsize=10, fontweight='bold', color='red')
         ax.set_xticks([])
         ax.set_yticks([])
@@ -218,7 +223,8 @@ class RAGVisualizer:
             # Create title with metadata
             result_title = f"Result {i+1}"
             if 'label' in metadata:
-                result_title += f"\nLabel: {metadata['label']}"
+                human_label = get_human_readable_label(metadata['label'])
+                result_title += f"\n{human_label} ({metadata['label']})"
             result_title += f"\nDist: {dist:.3f}"
             
             ax.set_title(result_title, fontsize=9)

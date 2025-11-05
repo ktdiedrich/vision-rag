@@ -14,6 +14,7 @@ import numpy as np
 from vision_rag import (
     load_organmnist_data,
     get_image_from_array,
+    get_human_readable_label,
     CLIPImageEncoder,
     ChromaRAGStore,
     ImageSearcher,
@@ -120,7 +121,8 @@ def main():
     
     # Perform searches and save results
     for i, (query_img, query_label) in enumerate(zip(query_images, query_labels)):
-        print(f"\n   🔍 Search {i+1}: Query image with label {query_label}")
+        readable_query_label = get_human_readable_label(query_label)
+        print(f"\n   🔍 Search {i+1}: Query image with {readable_query_label}")
         
         results = searcher.search(query_img, n_results=5)
         
@@ -145,9 +147,10 @@ def main():
         )
         print(f"      ✅ Saved search results: {search_results_path}")
         
-        # Print summary
+        # Print summary with human readable labels
         retrieved_labels = [meta.get('label', meta.get('index', 'unknown')) for meta in results['metadatas']]
-        print(f"      Retrieved labels: {retrieved_labels}")
+        readable_retrieved_labels = [get_human_readable_label(label) if isinstance(label, int) else str(label) for label in retrieved_labels]
+        print(f"      Retrieved labels: {readable_retrieved_labels}")
         print(f"      Distances: {[f'{d:.3f}' for d in results['distances']]}")
     
     print(f"\n🎉 Demonstration complete!")
