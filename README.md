@@ -165,10 +165,10 @@ Run the comprehensive demonstration:
 
 ```bash
 # Full demonstration with all visualizations
-PYTHONPATH=src uv run python demo_with_visualization.py
+cd demonstrations && PYTHONPATH=../src uv run python demo_with_visualization.py
 
 # Simple example
-uv run python simple_visualization_example.py
+cd demonstrations && uv run python simple_visualization_example.py
 ```
 
 ## Project Structure
@@ -183,6 +183,9 @@ vision-rag/
 │       ├── rag_store.py         # ChromaDB RAG store
 │       ├── search.py            # Image search functionality
 │       └── visualization.py     # Visualization utilities
+├── demonstrations/
+│   ├── demo_with_visualization.py    # Comprehensive demonstration
+│   └── simple_visualization_example.py  # Simple example
 ├── tests/
 │   ├── conftest.py
 │   ├── test_data_loader.py
@@ -191,8 +194,6 @@ vision-rag/
 │   ├── test_search.py
 │   ├── test_integration.py
 │   └── test_visualization.py
-├── demo_with_visualization.py    # Comprehensive demonstration
-├── simple_visualization_example.py  # Simple example
 ├── pyproject.toml
 └── README.md
 ```

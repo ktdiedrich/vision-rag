@@ -211,4 +211,7 @@ data/
 chroma_db/
 chroma_db_demo/
 visualizations/
+demonstrations/visualizations/
+demonstrations/simple_visualizations/
+demonstrations/simple_chroma/
 *.npz
