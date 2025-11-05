@@ -107,26 +107,92 @@ uv run pytest tests/test_encoder.py
 uv run pytest tests/test_rag_store.py
 uv run pytest tests/test_search.py
 uv run pytest tests/test_integration.py
+uv run pytest tests/test_visualization.py
+```
+
+## Visualization
+
+The system includes comprehensive visualization capabilities for analyzing the RAG pipeline:
+
+```python
+from vision_rag import RAGVisualizer
+
+# Initialize visualizer
+visualizer = RAGVisualizer(output_dir="./visualizations")
+
+# Visualize sample input images going into RAG store
+visualizer.save_input_images_grid(
+    images=sample_images,
+    labels=sample_labels,
+    filename="input_to_rag.png"
+)
+
+# Visualize search query images
+visualizer.save_search_input_images(
+    images=query_images,
+    labels=query_labels,
+    filename="search_queries.png"
+)
+
+# Visualize search results
+visualizer.save_search_results(
+    query_image=query_img,
+    query_label=query_label,
+    retrieved_images=retrieved_images,
+    retrieved_metadata=results['metadatas'],
+    distances=results['distances'],
+    filename="search_results.png"
+)
+
+# Visualize label distribution
+visualizer.save_label_distribution(
+    labels=all_labels,
+    filename="label_distribution.png"
+)
+
+# Visualize embedding space using t-SNE or PCA
+visualizer.save_embedding_space_visualization(
+    embeddings=embeddings,
+    labels=labels,
+    method='tsne',
+    filename="embedding_space.png"
+)
+```
+
+### Demo Scripts
+
+Run the comprehensive demonstration:
+
+```bash
+# Full demonstration with all visualizations
+cd demonstrations && PYTHONPATH=.. uv run python demo_with_visualization.py
+
+# Simple example
+cd demonstrations && uv run python simple_visualization_example.py
 ```
 
 ## Project Structure
 
 ```
 vision-rag/
-├── src/
-│   └── vision_rag/
-│       ├── __init__.py
-│       ├── data_loader.py    # OrganSMNIST dataset loading
-│       ├── encoder.py         # CLIP image encoder
-│       ├── rag_store.py       # ChromaDB RAG store
-│       └── search.py          # Image search functionality
+├── vision_rag/
+│   ├── __init__.py
+│   ├── data_loader.py       # OrganSMNIST dataset loading
+│   ├── encoder.py           # CLIP image encoder
+│   ├── rag_store.py         # ChromaDB RAG store
+│   ├── search.py            # Image search functionality
+│   └── visualization.py     # Visualization utilities
+├── demonstrations/
+│   ├── demo_with_visualization.py    # Comprehensive demonstration
+│   └── simple_visualization_example.py  # Simple example
 ├── tests/
 │   ├── conftest.py
 │   ├── test_data_loader.py
 │   ├── test_encoder.py
 │   ├── test_rag_store.py
 │   ├── test_search.py
-│   └── test_integration.py
+│   ├── test_integration.py
+│   └── test_visualization.py
 ├── pyproject.toml
 └── README.md
 ```
@@ -139,3 +205,7 @@ vision-rag/
 - `pytest`: Testing framework
 - `pillow`: Image processing
 - `numpy`: Numerical operations
+- `matplotlib`: Plotting and visualization
+- `seaborn`: Statistical data visualization
+- `pandas`: Data manipulation and analysis
+- `scikit-learn`: Machine learning utilities (t-SNE, PCA)
