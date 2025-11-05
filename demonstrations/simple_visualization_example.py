@@ -8,7 +8,6 @@ This script demonstrates how to:
 3. Save search results with retrieved images
 """
 
-import numpy as np
 from pathlib import Path
 import sys
 
