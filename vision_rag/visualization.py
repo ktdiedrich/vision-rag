@@ -330,7 +330,15 @@ class RAGVisualizer:
         plt.figure(figsize=(10, 8))
         scatter = plt.scatter(embedding_2d[:, 0], embedding_2d[:, 1], 
                             c=labels, cmap='tab10', alpha=0.7)
-        plt.colorbar(scatter, label='Label')
+        
+        # Create colorbar with human readable labels
+        cbar = plt.colorbar(scatter, label='Organ Label')
+        unique_labels = sorted(list(set(labels)))
+        if len(unique_labels) <= 11:  # Only show tick labels if reasonable number
+            cbar.set_ticks(unique_labels)
+            readable_labels = [get_human_readable_label(label) for label in unique_labels]
+            cbar.set_ticklabels(readable_labels)
+        
         plt.xlabel(f'{method.upper()} 1')
         plt.ylabel(f'{method.upper()} 2')
         plt.title(f'{title} ({method.upper()})', fontsize=14, fontweight='bold')
