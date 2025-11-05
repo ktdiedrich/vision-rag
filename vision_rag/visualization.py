@@ -257,25 +257,28 @@ class RAGVisualizer:
         """
         df = pd.DataFrame({'label': labels})
         label_counts = df['label'].value_counts().sort_index()
-        
+
         plt.figure(figsize=(10, 6))
         bars = plt.bar(label_counts.index, label_counts.values, alpha=0.8)
-        plt.xlabel('Label')
+        # Use human readable labels for the x-axis
+        tick_labels = [f"{get_human_readable_label(int(lbl))} ({int(lbl)})" for lbl in label_counts.index]
+        plt.xticks(label_counts.index, tick_labels, rotation=45, ha='right')
+        plt.xlabel('Label (organ)')
         plt.ylabel('Count')
         plt.title(title, fontsize=14, fontweight='bold')
         plt.grid(True, alpha=0.3)
-        
+
         # Add value labels on bars
         for bar in bars:
             height = bar.get_height()
-            plt.text(bar.get_x() + bar.get_width()/2., height,
-                    f'{int(height)}', ha='center', va='bottom')
-        
+            plt.text(bar.get_x() + bar.get_width() / 2., height,
+                     f'{int(height)}', ha='center', va='bottom')
+
         plt.tight_layout()
         output_path = self.output_dir / filename
         plt.savefig(output_path, dpi=150, bbox_inches='tight')
         plt.close()
-        
+
         return str(output_path)
     
     def save_embedding_space_visualization(
