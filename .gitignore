@@ -209,4 +209,6 @@ __marimo__/
 # Vision-RAG specific
 data/
 chroma_db/
+chroma_db_demo/
+visualizations/
 *.npz
