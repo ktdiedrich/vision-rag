@@ -89,7 +89,19 @@ def get_organmnist_label_names() -> dict:
     
     Returns:
         Dictionary mapping label indices to human readable names
+        
+    Raises:
+        FileNotFoundError: If the dataset file doesn't exist and needs to be downloaded
     """
+    # Check if dataset file exists
+    dataset_path = DEFAULT_DATA_DIR / "organsmnist.npz"
+    if not dataset_path.exists():
+        raise FileNotFoundError(
+            f"OrganSMNIST dataset not found at {dataset_path}. "
+            f"Please download the dataset first by calling download_organmnist() "
+            f"or load_organmnist_data()."
+        )
+    
     dataset = OrganSMNIST(split="train", download=False, root=str(DEFAULT_DATA_DIR))
     if hasattr(dataset, 'info') and 'label' in dataset.info:
         # Convert string keys to integers
