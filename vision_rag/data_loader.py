@@ -81,3 +81,49 @@ def get_image_from_array(image_array: np.ndarray) -> Image.Image:
         return Image.fromarray(image_array, mode='RGB')
     else:
         raise ValueError(f"Unsupported image array shape: {image_array.shape}")
+
+
+def get_organmnist_label_names() -> dict:
+    """
+    Get human readable label names for OrganSMNIST dataset.
+    
+    Returns:
+        Dictionary mapping label indices to human readable names
+        
+    Raises:
+        FileNotFoundError: If the dataset file doesn't exist and needs to be downloaded
+    """
+    # Check if dataset file exists
+    dataset_path = DEFAULT_DATA_DIR / "organsmnist.npz"
+    if not dataset_path.exists():
+        raise FileNotFoundError(
+            f"OrganSMNIST dataset not found at {dataset_path}. "
+            f"Please download the dataset first by calling download_organmnist() "
+            f"or load_organmnist_data()."
+        )
+    
+    dataset = OrganSMNIST(split="train", download=False, root=str(DEFAULT_DATA_DIR))
+    if hasattr(dataset, 'info') and 'label' in dataset.info:
+        # Convert string keys to integers
+        return {int(k): v for k, v in dataset.info['label'].items()}
+    else:
+        # Fallback mapping if dataset info is not available
+        return {
+            0: 'bladder', 1: 'femur-left', 2: 'femur-right', 3: 'heart', 
+            4: 'kidney-left', 5: 'kidney-right', 6: 'liver', 7: 'lung-left', 
+            8: 'lung-right', 9: 'pancreas', 10: 'spleen'
+        }
+
+
+def get_human_readable_label(label_index: int) -> str:
+    """
+    Get human readable label for a given label index.
+    
+    Args:
+        label_index: Numeric label index
+        
+    Returns:
+        Human readable label name
+    """
+    label_names = get_organmnist_label_names()
+    return label_names.get(label_index, f"Unknown ({label_index})")
