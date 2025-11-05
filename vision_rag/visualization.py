@@ -300,7 +300,7 @@ class RAGVisualizer:
         # Perform dimensionality reduction
         if method == 'tsne':
             # Adjust perplexity for small datasets
-            perplexity = min(30, max(5, embeddings.shape[0] - 1))
+            perplexity = min(30, max(5, (embeddings.shape[0] - 1) // 3))
             reducer = TSNE(n_components=2, random_state=42, perplexity=perplexity)
             embedding_2d = reducer.fit_transform(embeddings)
         elif method == 'pca':
