@@ -11,6 +11,10 @@ import pandas as pd
 from .data_loader import get_human_readable_label
 
 
+# Maximum number of labels to show on colorbar before omitting tick labels
+MAX_COLORBAR_LABELS = 11
+
+
 class RAGVisualizer:
     """Visualizer for RAG system inputs and outputs."""
     
@@ -257,25 +261,28 @@ class RAGVisualizer:
         """
         df = pd.DataFrame({'label': labels})
         label_counts = df['label'].value_counts().sort_index()
-        
+
         plt.figure(figsize=(10, 6))
         bars = plt.bar(label_counts.index, label_counts.values, alpha=0.8)
-        plt.xlabel('Label')
+        # Use human readable labels for the x-axis
+        tick_labels = [f"{get_human_readable_label(int(lbl))} ({int(lbl)})" for lbl in label_counts.index]
+        plt.xticks(label_counts.index, tick_labels, rotation=45, ha='right')
+        plt.xlabel('Label (organ)')
         plt.ylabel('Count')
         plt.title(title, fontsize=14, fontweight='bold')
         plt.grid(True, alpha=0.3)
-        
+
         # Add value labels on bars
         for bar in bars:
             height = bar.get_height()
-            plt.text(bar.get_x() + bar.get_width()/2., height,
-                    f'{int(height)}', ha='center', va='bottom')
-        
+            plt.text(bar.get_x() + bar.get_width() / 2., height,
+                     f'{int(height)}', ha='center', va='bottom')
+
         plt.tight_layout()
         output_path = self.output_dir / filename
         plt.savefig(output_path, dpi=150, bbox_inches='tight')
         plt.close()
-        
+
         return str(output_path)
     
     def save_embedding_space_visualization(
@@ -327,7 +334,15 @@ class RAGVisualizer:
         plt.figure(figsize=(10, 8))
         scatter = plt.scatter(embedding_2d[:, 0], embedding_2d[:, 1], 
                             c=labels, cmap='tab10', alpha=0.7)
-        plt.colorbar(scatter, label='Label')
+        
+        # Create colorbar with human readable labels
+        cbar = plt.colorbar(scatter, label='Organ Label')
+        unique_labels = sorted(list(set(labels)))
+        if len(unique_labels) <= MAX_COLORBAR_LABELS:
+            cbar.set_ticks(unique_labels)
+            readable_labels = [get_human_readable_label(label) for label in unique_labels]
+            cbar.set_ticklabels(readable_labels)
+        
         plt.xlabel(f'{method.upper()} 1')
         plt.ylabel(f'{method.upper()} 2')
         plt.title(f'{title} ({method.upper()})', fontsize=14, fontweight='bold')
