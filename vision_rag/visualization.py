@@ -11,6 +11,10 @@ import pandas as pd
 from .data_loader import get_human_readable_label
 
 
+# Maximum number of labels to show on colorbar before omitting tick labels
+MAX_COLORBAR_LABELS = 11
+
+
 class RAGVisualizer:
     """Visualizer for RAG system inputs and outputs."""
     
@@ -334,7 +338,7 @@ class RAGVisualizer:
         # Create colorbar with human readable labels
         cbar = plt.colorbar(scatter, label='Organ Label')
         unique_labels = sorted(list(set(labels)))
-        if len(unique_labels) <= 11:  # Only show tick labels if reasonable number
+        if len(unique_labels) <= MAX_COLORBAR_LABELS:
             cbar.set_ticks(unique_labels)
             readable_labels = [get_human_readable_label(label) for label in unique_labels]
             cbar.set_ticklabels(readable_labels)
