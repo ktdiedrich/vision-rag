@@ -1,6 +1,5 @@
 """Visualization utilities for the vision RAG system."""
 
-import os
 from pathlib import Path
 from typing import List, Union, Optional, Dict, Any
 import numpy as np
