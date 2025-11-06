@@ -110,6 +110,23 @@ uv run pytest tests/test_integration.py
 uv run pytest tests/test_visualization.py
 ```
 
+### Code Coverage
+
+Run tests with coverage report:
+
+```bash
+# Generate coverage report in terminal
+uv run pytest tests/ --cov=vision_rag --cov-report=term-missing
+
+# Generate HTML coverage report
+uv run pytest tests/ --cov=vision_rag --cov-report=html
+
+# Open HTML report in browser
+open htmlcov/index.html  # macOS
+xdg-open htmlcov/index.html  # Linux
+```
+
+
 ## Visualization
 
 The system includes comprehensive visualization capabilities for analyzing the RAG pipeline:
