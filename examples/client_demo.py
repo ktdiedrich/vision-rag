@@ -11,9 +11,6 @@ from pathlib import Path
 
 import httpx
 from PIL import Image
-import numpy as np
-
-
 async def test_api_service():
     """Test the FastAPI service endpoints."""
     base_url = "http://localhost:8001"
