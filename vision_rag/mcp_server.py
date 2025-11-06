@@ -1,8 +1,6 @@
 """Model Context Protocol (MCP) server for vision RAG agent communication."""
 
 import asyncio
-import base64
-import io
 import os
 from typing import Any, Dict, List, Optional
 
@@ -12,6 +10,7 @@ from .encoder import CLIPImageEncoder
 from .rag_store import ChromaRAGStore
 from .search import ImageSearcher
 from .data_loader import get_human_readable_label
+from .utils import decode_base64_image
 
 
 # Configuration
@@ -88,8 +87,7 @@ class VisionRAGMCPServer:
             Search results with metadata
         """
         # Decode image
-        image_bytes = base64.b64decode(image_base64)
-        image = Image.open(io.BytesIO(image_bytes))
+        image = decode_base64_image(image_base64)
         
         # Perform search
         results = self.searcher.search(image, n_results=n_results)
@@ -161,8 +159,7 @@ class VisionRAGMCPServer:
             Status and assigned ID
         """
         # Decode image
-        image_bytes = base64.b64decode(image_base64)
-        image = Image.open(io.BytesIO(image_bytes))
+        image = decode_base64_image(image_base64)
         
         # Encode image
         embedding = self.encoder.encode_image(image)

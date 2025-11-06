@@ -4,6 +4,7 @@ from .data_loader import download_organmnist, load_organmnist_data, get_image_fr
 from .encoder import CLIPImageEncoder
 from .rag_store import ChromaRAGStore
 from .search import ImageSearcher
+from .utils import decode_base64_image
 from .visualization import RAGVisualizer
 
 __all__ = [
@@ -15,5 +16,6 @@ __all__ = [
     "CLIPImageEncoder",
     "ChromaRAGStore",
     "ImageSearcher",
+    "decode_base64_image",
     "RAGVisualizer",
 ]

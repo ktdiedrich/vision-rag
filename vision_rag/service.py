@@ -1,8 +1,6 @@
 """FastAPI service for vision RAG system."""
 
 from typing import List, Optional, Dict, Any
-import base64
-import io
 import os
 
 from fastapi import FastAPI, HTTPException, UploadFile, File
@@ -13,6 +11,7 @@ from .encoder import CLIPImageEncoder
 from .rag_store import ChromaRAGStore
 from .search import ImageSearcher
 from .data_loader import get_human_readable_label
+from .utils import decode_base64_image
 
 
 # Configuration
@@ -160,8 +159,7 @@ async def search_similar_images(request: SearchRequest):
     
     try:
         # Decode base64 image
-        image_bytes = base64.b64decode(request.image_base64)
-        image = Image.open(io.BytesIO(image_bytes))
+        image = decode_base64_image(request.image_base64)
         
         # Perform search
         results = searcher.search(image, n_results=request.n_results)
@@ -264,8 +262,7 @@ async def add_image(request: AddImageRequest):
     
     try:
         # Decode base64 image
-        image_bytes = base64.b64decode(request.image_base64)
-        image = Image.open(io.BytesIO(image_bytes))
+        image = decode_base64_image(request.image_base64)
         
         # Encode image
         embedding = encoder.encode_image(image)
