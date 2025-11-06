@@ -1,6 +1,7 @@
 """FastAPI service for vision RAG system."""
 
 from typing import List, Optional, Dict, Any
+import io
 import os
 
 from fastapi import FastAPI, HTTPException, UploadFile, File
