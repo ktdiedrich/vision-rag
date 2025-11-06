@@ -3,7 +3,6 @@
 from typing import List, Optional, Dict, Any
 import base64
 import io
-from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.responses import JSONResponse
