@@ -6,7 +6,6 @@ import io
 from typing import Any, Dict, List, Optional
 
 from PIL import Image
-import numpy as np
 
 from .encoder import CLIPImageEncoder
 from .rag_store import ChromaRAGStore
