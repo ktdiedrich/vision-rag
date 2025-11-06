@@ -102,7 +102,7 @@ class ChromaRAGStore:
         n_results: Optional[int] = None,
     ) -> dict:
         """
-        Retrieve all images with a specific label.
+        Retrieve images with a specific label, optionally limited by n_results.
         
         Args:
             label: The label to search for
