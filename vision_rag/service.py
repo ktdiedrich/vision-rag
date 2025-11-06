@@ -3,6 +3,7 @@
 from typing import List, Optional, Dict, Any
 import io
 import os
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException, UploadFile, File
 from pydantic import BaseModel, Field
@@ -70,24 +71,18 @@ class StatsResponse(BaseModel):
     persist_directory: str
 
 
-# Initialize FastAPI app
-app = FastAPI(
-    title="Vision RAG API",
-    description="A retrieval-augmented generation system for medical images using CLIP embeddings",
-    version="0.1.0",
-)
-
 # Global state (initialized on startup)
 encoder: Optional[CLIPImageEncoder] = None
 rag_store: Optional[ChromaRAGStore] = None
 searcher: Optional[ImageSearcher] = None
 
 
-@app.on_event("startup")
-async def startup_event():
-    """Initialize components on startup."""
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Manage application lifespan - startup and shutdown."""
     global encoder, rag_store, searcher
     
+    # Startup
     print("🚀 Initializing Vision RAG Service...")
     
     # Initialize encoder
@@ -106,6 +101,20 @@ async def startup_event():
     print("✅ Image searcher ready")
     
     print("🎉 Vision RAG Service is ready!")
+    
+    yield
+    
+    # Shutdown (cleanup resources if needed)
+    print("👋 Shutting down Vision RAG Service...")
+
+
+# Initialize FastAPI app with lifespan
+app = FastAPI(
+    title="Vision RAG API",
+    description="A retrieval-augmented generation system for medical images using CLIP embeddings",
+    version="0.1.0",
+    lifespan=lifespan,
+)
 
 
 @app.get("/", response_model=Dict[str, str])
