@@ -96,6 +96,37 @@ class ChromaRAGStore:
             "metadatas": results["metadatas"][0] if results["metadatas"] else [],
         }
     
+    def search_by_label(
+        self,
+        label: int,
+        n_results: Optional[int] = None,
+    ) -> dict:
+        """
+        Retrieve images with a specific label, optionally limited by n_results.
+        
+        Args:
+            label: The label to search for
+            n_results: Optional limit on number of results (default: all matching)
+            
+        Returns:
+            Dictionary containing search results with keys:
+            - ids: List of matching IDs
+            - metadatas: List of metadata dictionaries
+            - embeddings: List of embeddings (if available)
+        """
+        # Get all items with matching label
+        results = self.collection.get(
+            where={"label": label},
+            limit=n_results,
+            include=["metadatas", "embeddings"]
+        )
+        
+        return {
+            "ids": results["ids"] if results["ids"] else [],
+            "metadatas": results["metadatas"] if results["metadatas"] else [],
+            "embeddings": results.get("embeddings", []),
+        }
+    
     def count(self) -> int:
         """Get the number of embeddings in the store."""
         return self.collection.count()
