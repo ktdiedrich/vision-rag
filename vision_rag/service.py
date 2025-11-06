@@ -6,7 +6,6 @@ import io
 
 from fastapi import FastAPI, HTTPException, UploadFile, File
 from pydantic import BaseModel, Field
-import numpy as np
 from PIL import Image
 
 from .encoder import CLIPImageEncoder
