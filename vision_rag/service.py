@@ -5,7 +5,6 @@ import base64
 import io
 
 from fastapi import FastAPI, HTTPException, UploadFile, File
-from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 import numpy as np
 from PIL import Image
