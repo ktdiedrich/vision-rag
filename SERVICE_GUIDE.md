@@ -140,7 +140,7 @@ result = await server.handle_tool_call("list_available_labels", {})
 
 Run the demo client:
 ```bash
-PYTHONPATH=/home/ktdiedrich/code/vision-rag uv run python examples/client_demo.py
+PYTHONPATH=. uv run python examples/client_demo.py
 ```
 
 Run unit tests:
