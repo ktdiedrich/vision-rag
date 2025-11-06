@@ -121,3 +121,57 @@ def test_clear(rag_store, sample_embeddings):
     # Clear the store
     rag_store.clear()
     assert rag_store.count() == 0
+
+
+def test_search_by_label(rag_store, sample_embeddings):
+    """Test searching by label."""
+    # Add embeddings with labels (3 different labels)
+    metadatas = [{"label": i % 3, "index": i} for i in range(len(sample_embeddings))]
+    rag_store.add_embeddings(sample_embeddings, metadatas=metadatas)
+    
+    # Search for label 0
+    results = rag_store.search_by_label(label=0)
+    
+    # Check results structure
+    assert "ids" in results
+    assert "metadatas" in results
+    assert "embeddings" in results
+    
+    # Should return images with indices 0, 3, 6, 9 (label 0)
+    assert len(results["ids"]) == 4
+    
+    # Verify all returned items have label 0
+    for metadata in results["metadatas"]:
+        assert metadata["label"] == 0
+
+
+def test_search_by_label_with_limit(rag_store, sample_embeddings):
+    """Test searching by label with result limit."""
+    # Add embeddings with labels
+    metadatas = [{"label": i % 3, "index": i} for i in range(len(sample_embeddings))]
+    rag_store.add_embeddings(sample_embeddings, metadatas=metadatas)
+    
+    # Search for label 1 with limit of 2
+    results = rag_store.search_by_label(label=1, n_results=2)
+    
+    # Should return at most 2 results
+    assert len(results["ids"]) == 2
+    
+    # Verify all returned items have label 1
+    for metadata in results["metadatas"]:
+        assert metadata["label"] == 1
+
+
+def test_search_by_label_no_matches(rag_store, sample_embeddings):
+    """Test searching by label with no matches."""
+    # Add embeddings with labels 0-2
+    metadatas = [{"label": i % 3, "index": i} for i in range(len(sample_embeddings))]
+    rag_store.add_embeddings(sample_embeddings, metadatas=metadatas)
+    
+    # Search for label 99 (doesn't exist)
+    results = rag_store.search_by_label(label=99)
+    
+    # Should return empty results
+    assert len(results["ids"]) == 0
+    assert len(results["metadatas"]) == 0
+    assert len(results["embeddings"]) == 0
