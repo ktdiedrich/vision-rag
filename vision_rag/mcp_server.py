@@ -3,6 +3,7 @@
 import asyncio
 import base64
 import io
+import os
 from typing import Any, Dict, List, Optional
 
 from PIL import Image
@@ -11,6 +12,10 @@ from .encoder import CLIPImageEncoder
 from .rag_store import ChromaRAGStore
 from .search import ImageSearcher
 from .data_loader import get_human_readable_label
+
+
+# Configuration
+CLIP_MODEL_NAME = os.getenv("VISION_RAG_CLIP_MODEL", "clip-ViT-B-32")
 
 
 class VisionRAGMCPServer:
@@ -28,7 +33,7 @@ class VisionRAGMCPServer:
             collection_name: ChromaDB collection name
             persist_directory: Directory for persistent storage
         """
-        self.encoder = CLIPImageEncoder(model_name="clip-ViT-B-32")
+        self.encoder = CLIPImageEncoder(model_name=CLIP_MODEL_NAME)
         self.rag_store = ChromaRAGStore(
             collection_name=collection_name,
             persist_directory=persist_directory,
@@ -194,7 +199,7 @@ class VisionRAGMCPServer:
             "total_embeddings": self.rag_store.count(),
             "collection_name": self.rag_store.collection_name,
             "persist_directory": self.rag_store.persist_directory,
-            "encoder_model": "clip-ViT-B-32",
+            "encoder_model": CLIP_MODEL_NAME,
             "embedding_dimension": self.encoder.embedding_dimension,
         }
     
