@@ -5,6 +5,8 @@
 ### Environment Variables
 
 - `VISION_RAG_CLIP_MODEL`: CLIP model name to use for image encoding (default: `clip-ViT-B-32`)
+- `VISION_RAG_COLLECTION_NAME`: ChromaDB collection name for the service (default: `vision_rag_service`)
+- `VISION_RAG_PERSIST_DIR`: Directory path for persistent ChromaDB storage (default: `./service_chroma_db`)
 
 Example:
 ```bash
@@ -12,8 +14,13 @@ Example:
 export VISION_RAG_CLIP_MODEL="clip-ViT-L-14"
 python run_service.py --mode api
 
-# Or set it inline
-VISION_RAG_CLIP_MODEL="clip-ViT-L-14" python run_service.py --mode api
+# Use a custom collection name and persist directory
+export VISION_RAG_COLLECTION_NAME="my_medical_images"
+export VISION_RAG_PERSIST_DIR="/data/chroma_db"
+python run_service.py --mode api
+
+# Or set them inline
+VISION_RAG_CLIP_MODEL="clip-ViT-L-14" VISION_RAG_COLLECTION_NAME="production_db" python run_service.py --mode api
 ```
 
 ## 🚀 Starting the Service

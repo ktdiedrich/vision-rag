@@ -17,6 +17,8 @@ from .utils import decode_base64_image
 
 # Configuration
 CLIP_MODEL_NAME = os.getenv("VISION_RAG_CLIP_MODEL", "clip-ViT-B-32")
+COLLECTION_NAME = os.getenv("VISION_RAG_COLLECTION_NAME", "vision_rag_service")
+PERSIST_DIRECTORY = os.getenv("VISION_RAG_PERSIST_DIR", "./service_chroma_db")
 
 
 # Pydantic models for API requests/responses
@@ -94,8 +96,8 @@ async def startup_event():
     
     # Initialize RAG store
     rag_store = ChromaRAGStore(
-        collection_name="vision_rag_service",
-        persist_directory="./service_chroma_db",
+        collection_name=COLLECTION_NAME,
+        persist_directory=PERSIST_DIRECTORY,
     )
     print(f"✅ Connected to ChromaDB ({rag_store.count()} embeddings)")
     
