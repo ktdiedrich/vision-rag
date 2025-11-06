@@ -3,6 +3,7 @@
 from typing import List, Optional, Dict, Any
 import base64
 import io
+import os
 
 from fastapi import FastAPI, HTTPException, UploadFile, File
 from pydantic import BaseModel, Field
@@ -12,6 +13,10 @@ from .encoder import CLIPImageEncoder
 from .rag_store import ChromaRAGStore
 from .search import ImageSearcher
 from .data_loader import get_human_readable_label
+
+
+# Configuration
+CLIP_MODEL_NAME = os.getenv("VISION_RAG_CLIP_MODEL", "clip-ViT-B-32")
 
 
 # Pydantic models for API requests/responses
@@ -84,8 +89,8 @@ async def startup_event():
     print("🚀 Initializing Vision RAG Service...")
     
     # Initialize encoder
-    encoder = CLIPImageEncoder(model_name="clip-ViT-B-32")
-    print(f"✅ Loaded CLIP encoder (embedding dim: {encoder.embedding_dimension})")
+    encoder = CLIPImageEncoder(model_name=CLIP_MODEL_NAME)
+    print(f"✅ Loaded CLIP encoder: {CLIP_MODEL_NAME} (embedding dim: {encoder.embedding_dimension})")
     
     # Initialize RAG store
     rag_store = ChromaRAGStore(
@@ -120,7 +125,7 @@ async def health_check():
     
     return HealthResponse(
         status="healthy",
-        encoder_model="clip-ViT-B-32",
+        encoder_model=CLIP_MODEL_NAME,
         collection_name=rag_store.collection_name,
         embeddings_count=rag_store.count(),
     )

@@ -1,5 +1,21 @@
 # Vision RAG Service Quick Start
 
+## ⚙️ Configuration
+
+### Environment Variables
+
+- `VISION_RAG_CLIP_MODEL`: CLIP model name to use for image encoding (default: `clip-ViT-B-32`)
+
+Example:
+```bash
+# Use a different CLIP model
+export VISION_RAG_CLIP_MODEL="clip-ViT-L-14"
+python run_service.py --mode api
+
+# Or set it inline
+VISION_RAG_CLIP_MODEL="clip-ViT-L-14" python run_service.py --mode api
+```
+
 ## 🚀 Starting the Service
 
 ### Option 1: FastAPI REST Service

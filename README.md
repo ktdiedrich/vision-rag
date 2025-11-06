@@ -6,7 +6,7 @@ A retrieval-augmented generation (RAG) system for medical images using CLIP embe
 
 This project implements a vision-based RAG system that:
 - Downloads the OrganSMNIST dataset from the MedMNIST collection
-- Encodes medical images using the CLIP ViT-B-32 model
+- Encodes medical images using CLIP models (default: ViT-B-32, configurable)
 - Stores embeddings in ChromaDB for efficient retrieval
 - Searches for similar images from the training set given test images
 
