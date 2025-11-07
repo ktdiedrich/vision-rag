@@ -12,34 +12,34 @@ Example:
 ```bash
 # Use a different CLIP model
 export VISION_RAG_CLIP_MODEL="clip-ViT-L-14"
-python run_service.py --mode api
+python scripts/run_service.py --mode api
 
 # Use a custom collection name and persist directory
 export VISION_RAG_COLLECTION_NAME="my_medical_images"
 export VISION_RAG_PERSIST_DIR="/data/chroma_db"
-python run_service.py --mode api
+python scripts/run_service.py --mode api
 
 # Or set them inline
-VISION_RAG_CLIP_MODEL="clip-ViT-L-14" VISION_RAG_COLLECTION_NAME="production_db" python run_service.py --mode api
+VISION_RAG_CLIP_MODEL="clip-ViT-L-14" VISION_RAG_COLLECTION_NAME="production_db" python scripts/run_service.py --mode api
 ```
 
 ## 🚀 Starting the Service
 
 ### Option 1: FastAPI REST Service
 ```bash
-python run_service.py --mode api --port 8001
+python scripts/run_service.py --mode api --port 8001
 ```
 - API Docs: http://localhost:8001/docs
 - Health: http://localhost:8001/health
 
 ### Option 2: MCP Agent Server
 ```bash
-python run_service.py --mode mcp
+python scripts/run_service.py --mode mcp
 ```
 
 ### Option 3: Both Services
 ```bash
-python run_service.py --mode both
+python scripts/run_service.py --mode both
 ```
 
 ## 📡 API Endpoints
@@ -164,7 +164,7 @@ uv run pytest tests/ --cov=vision_rag --cov-report=term-missing
 
 1. Start the service:
    ```bash
-   python run_service.py --mode api
+   python scripts/run_service.py --mode api
    ```
 
 2. Add medical images:

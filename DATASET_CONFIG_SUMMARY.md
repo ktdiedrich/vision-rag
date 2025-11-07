@@ -74,10 +74,10 @@ images, labels = load_medmnist_data(dataset_name="PathMNIST", split="train")
 ### Service Configuration
 ```bash
 # Run FastAPI service with ChestMNIST
-VISION_RAG_DATASET="ChestMNIST" python run_service.py --mode api
+VISION_RAG_DATASET="ChestMNIST" python scripts/run_service.py --mode api
 
 # Run MCP server with DermaMNIST
-VISION_RAG_DATASET="DermaMNIST" python run_service.py --mode mcp
+VISION_RAG_DATASET="DermaMNIST" python scripts/run_service.py --mode mcp
 ```
 
 ## Backward Compatibility

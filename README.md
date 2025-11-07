@@ -344,7 +344,10 @@ vision-rag/
 │   ├── test_visualization.py
 │   ├── test_service.py
 │   └── test_mcp_server.py
-├── run_service.py           # Service runner script
+├── scripts/
+│   ├── main.py              # Main demo script
+│   ├── verify.py            # Verification script
+│   └── run_service.py       # Service runner script
 ├── pyproject.toml
 └── README.md
 ```
@@ -369,13 +372,13 @@ Start the REST API service:
 
 ```bash
 # Basic startup (runs on port 8001 by default)
-python run_service.py --mode api
+python scripts/run_service.py --mode api
 
 # With specific dataset
-VISION_RAG_DATASET="ChestMNIST" python run_service.py --mode api
+VISION_RAG_DATASET="ChestMNIST" python scripts/run_service.py --mode api
 
 # Custom host/port
-python run_service.py --mode api --host 0.0.0.0 --port 8080
+python scripts/run_service.py --mode api --host 0.0.0.0 --port 8080
 
 # Or use uvicorn directly
 uv run uvicorn vision_rag.service:app --host 0.0.0.0 --port 8001
@@ -399,10 +402,10 @@ Once running, visit `http://localhost:8001/docs` for interactive Swagger UI docu
 Start the Model Context Protocol server for agent communication:
 
 ```bash
-python run_service.py --mode mcp
+python scripts/run_service.py --mode mcp
 
 # With specific dataset
-VISION_RAG_DATASET="DermaMNIST" python run_service.py --mode mcp
+VISION_RAG_DATASET="DermaMNIST" python scripts/run_service.py --mode mcp
 ```
 
 **Available MCP Tools:**
@@ -417,10 +420,10 @@ VISION_RAG_DATASET="DermaMNIST" python run_service.py --mode mcp
 Start both FastAPI and MCP servers simultaneously:
 
 ```bash
-python run_service.py --mode both --port 8001
+python scripts/run_service.py --mode both --port 8001
 
 # With specific dataset
-VISION_RAG_DATASET="PathMNIST" python run_service.py --mode both --port 8001
+VISION_RAG_DATASET="PathMNIST" python scripts/run_service.py --mode both --port 8001
 ```
 
 ### Example Client Usage
