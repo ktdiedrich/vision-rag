@@ -1,7 +1,6 @@
 """Tests for MCP server module."""
 
 import pytest
-import asyncio
 import numpy as np
 from PIL import Image
 
