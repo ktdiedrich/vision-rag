@@ -1,4 +1,4 @@
-.PHONY: help test test-cov up-api up-mcp up-both down status clean install verify examples example-main example-client
+.PHONY: help test test-cov up-api up-mcp up-both down status clean clean-rag install verify examples example-main example-client
 
 # Default target
 help:
@@ -25,6 +25,7 @@ help:
 	@echo ""
 	@echo "Cleanup:"
 	@echo "  make clean       - Remove cache and temporary files"
+	@echo "  make clean-rag   - Remove RAG database directories"
 
 # Installation
 install:
@@ -196,3 +197,16 @@ clean:
 	find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
 	find . -type f -name "*.pyc" -delete
 	@echo "✓ Cleaned up cache and temporary files"
+
+clean-rag:
+	@echo "Removing RAG database directories..."
+	@if ls chroma_db_* > /dev/null 2>&1; then \
+		rm -rf chroma_db_*; \
+		echo "✓ Removed all chroma_db_* directories"; \
+	else \
+		echo "✓ No chroma_db_* directories found"; \
+	fi
+	@if ls demonstrations/chroma_db_* > /dev/null 2>&1; then \
+		rm -rf demonstrations/chroma_db_*; \
+		echo "✓ Removed demonstrations/chroma_db_* directories"; \
+	fi
