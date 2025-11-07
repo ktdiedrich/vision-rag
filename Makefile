@@ -1,4 +1,4 @@
-.PHONY: help test test-cov up-api up-mcp up-both down status clean clean-rag install verify examples example-main example-client
+.PHONY: help test test-cov up-api up-mcp up-both down status clean clean-rag clean-images install verify examples example-main example-client demo demo-simple demo-full demo-multi
 
 # Default target
 help:
@@ -23,9 +23,16 @@ help:
 	@echo "  make example-main   - Run main demo script"
 	@echo "  make example-client - Run client demo (requires service)"
 	@echo ""
+	@echo "Demonstrations:"
+	@echo "  make demo           - List available demonstrations"
+	@echo "  make demo-simple    - Run simple visualization demo (fast, 50 images)"
+	@echo "  make demo-full      - Run full visualization demo (1000 images)"
+	@echo "  make demo-multi     - Run multi-dataset demonstration"
+	@echo ""
 	@echo "Cleanup:"
-	@echo "  make clean       - Remove cache and temporary files"
-	@echo "  make clean-rag   - Remove RAG database directories"
+	@echo "  make clean         - Remove cache and temporary files"
+	@echo "  make clean-rag     - Remove RAG database directories"
+	@echo "  make clean-images  - Remove image store directories"
 
 # Installation
 install:
@@ -183,6 +190,45 @@ example-client:
 		python examples/client_demo.py; \
 	fi
 
+# Demonstrations
+demo:
+	@echo "Available Demonstrations"
+	@echo "======================="
+	@echo ""
+	@echo "Simple Visualization Demo (fast, 50 images):"
+	@echo "   make demo-simple"
+	@echo "   - Quick demonstration of core functionality"
+	@echo "   - Creates 5 visualization files in simple_visualizations/"
+	@echo "   - Perfect for understanding basic concepts"
+	@echo ""
+	@echo "Full Visualization Demo (1000 images):"
+	@echo "   make demo-full"
+	@echo "   - Comprehensive demonstration with full analysis"
+	@echo "   - Creates 9 visualization files in visualizations/"
+	@echo "   - Includes embedding space analysis (t-SNE)"
+	@echo "   - Shows multiple search scenarios"
+	@echo ""
+	@echo "Multi-Dataset Demo:"
+	@echo "   make demo-multi"
+	@echo "   - Demonstrates using multiple MedMNIST datasets"
+	@echo "   - Compares PathMNIST and ChestMNIST"
+	@echo "   - Shows dataset configuration usage"
+
+demo-simple:
+	@echo "Running simple visualization demo..."
+	@echo "This will create visualizations in demonstrations/simple_visualizations/"
+	cd demonstrations && uv run python simple_visualization_example.py
+
+demo-full:
+	@echo "Running full visualization demo..."
+	@echo "This will create visualizations in demonstrations/visualizations/"
+	@echo "⚠️  This demo uses 1000 images and may take a few minutes..."
+	cd demonstrations && uv run python demo_with_visualization.py
+
+demo-multi:
+	@echo "Running multi-dataset demonstration..."
+	cd demonstrations && uv run python multi_dataset_demo.py
+
 # Cleanup
 clean:
 	@echo "Cleaning up..."
@@ -211,4 +257,19 @@ clean-rag:
 		echo "✓ Removed demonstrations/chroma_db_* directories"; \
 	else \
 		echo "✓ No demonstrations/chroma_db_* directories found"; \
+	fi
+
+clean-images:
+	@echo "Removing image store directories..."
+	@if ls image_store_* > /dev/null 2>&1; then \
+		rm -rf image_store_*; \
+		echo "✓ Removed all image_store_* directories"; \
+	else \
+		echo "✓ No image_store_* directories found"; \
+	fi
+	@if ls demonstrations/image_store_* > /dev/null 2>&1; then \
+		rm -rf demonstrations/image_store_*; \
+		echo "✓ Removed demonstrations/image_store_* directories"; \
+	else \
+		echo "✓ No demonstrations/image_store_* directories found"; \
 	fi

@@ -22,6 +22,7 @@ from vision_rag import (
     ChromaRAGStore,
     ImageSearcher,
     RAGVisualizer,
+    ImageFileStore,
 )
 
 
@@ -63,14 +64,25 @@ def main():
     rag_store = ChromaRAGStore(collection_name="simple_example", persist_directory="./chroma_db_simple")
     rag_store.clear()
     
+    # Initialize image store
+    image_store = ImageFileStore(storage_dir="./image_store_simple")
+    image_store.clear()
+    
     # Encode and add training images
     train_pil_images = [get_image_from_array(img) for img, _ in train_subset]
     train_embeddings = encoder.encode_images(train_pil_images)
-    train_metadata = [{"label": label} for _, label in train_subset]
+    
+    # Save images to disk and create metadata with paths
+    train_metadata = []
+    for i, (image, (_, label)) in enumerate(zip(train_pil_images, train_subset)):
+        image_path = image_store.save_image(image, prefix="train")
+        train_metadata.append({"label": label, "image_path": image_path})
+    
     rag_store.add_embeddings(train_embeddings, metadatas=train_metadata)
     
     searcher = ImageSearcher(encoder=encoder, rag_store=rag_store)
     print(f"Added {len(train_subset)} images to RAG store")
+    print(f"Saved {image_store.count()} images to disk")
     
     # 3. VISUALIZE SEARCH INPUT IMAGES
     print("\n🔍 Step 3: Visualizing search query images...")

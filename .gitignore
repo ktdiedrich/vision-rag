@@ -209,6 +209,7 @@ __marimo__/
 # Vision-RAG specific
 data/
 chroma_db*/
+image_store*/
 visualizations/
 demonstrations/visualizations/
 demonstrations/simple_visualizations/

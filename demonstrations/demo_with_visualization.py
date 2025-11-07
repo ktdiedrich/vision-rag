@@ -19,6 +19,7 @@ from vision_rag import (
     ChromaRAGStore,
     ImageSearcher,
     RAGVisualizer,
+    ImageFileStore,
     CLIP_MODEL_NAME
 )
 
@@ -88,10 +89,20 @@ def main():
     # Clear any existing data
     rag_store.clear()
     
-    # Add embeddings with metadata
-    metadatas = [{"label": label} for label in subset_labels]
+    # Initialize image store
+    image_store = ImageFileStore(storage_dir="./image_store_demo")
+    image_store.clear()
+    
+    # Save images to disk and add embeddings with metadata including paths
+    print(f"\n💾 Saving images to disk...")
+    metadatas = []
+    for i, (image, label) in enumerate(zip(subset_images, subset_labels)):
+        image_path = image_store.save_image(image, prefix="train")
+        metadatas.append({"label": label, "image_path": image_path})
+    
     rag_store.add_embeddings(train_embeddings, metadatas=metadatas)
     print(f"   Added {rag_store.count()} embeddings to RAG store")
+    print(f"   Saved {image_store.count()} images to disk")
     
     # Step 6: Visualize embedding space
     print("\n🌌 Visualizing embedding space...")
