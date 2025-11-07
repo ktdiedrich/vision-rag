@@ -1,9 +1,14 @@
 """Image encoder using CLIP model."""
 
 from typing import List, Union
+import os
 import numpy as np
 from PIL import Image
 from sentence_transformers import SentenceTransformer
+
+
+# Configuration
+CLIP_MODEL_NAME = os.getenv("VISION_RAG_CLIP_MODEL", "clip-ViT-B-32")
 
 # Default image size for dummy images (OrganSMNIST dataset dimensions)
 DEFAULT_IMAGE_SIZE = 28
@@ -12,7 +17,7 @@ DEFAULT_IMAGE_SIZE = 28
 class CLIPImageEncoder:
     """Image encoder using CLIP ViT-B-32 model."""
     
-    def __init__(self, model_name: str = "clip-ViT-B-32"):
+    def __init__(self, model_name: str = CLIP_MODEL_NAME):
         """
         Initialize the CLIP encoder.
         
