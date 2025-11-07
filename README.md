@@ -29,7 +29,7 @@ export VISION_RAG_CLIP_MODEL="clip-ViT-L-14"
 
 # Configure storage (defaults shown)
 export VISION_RAG_COLLECTION_NAME="vision_rag"
-export VISION_RAG_PERSIST_DIR="./chroma_db"
+export VISION_RAG_PERSIST_DIR="./chroma_db_default"
 ```
 
 ### Available Datasets
@@ -163,7 +163,7 @@ embeddings = encoder.encode_images([img for img in train_images])
 # Create RAG store
 rag_store = ChromaRAGStore(
     collection_name="organmnist",
-    persist_directory="./chroma_db",
+    persist_directory="./chroma_db_example",
 )
 
 # Add embeddings with metadata
@@ -412,7 +412,7 @@ Vision RAG can be run as a service for agent-to-agent communication. The service
 export VISION_RAG_DATASET="PathMNIST"  # Default: OrganSMNIST
 export VISION_RAG_CLIP_MODEL="clip-ViT-B-32"
 export VISION_RAG_COLLECTION_NAME="vision_rag_service"
-export VISION_RAG_PERSIST_DIR="./service_chroma_db"
+export VISION_RAG_PERSIST_DIR="./chroma_db_service"
 ```
 
 ### 1. FastAPI REST Service

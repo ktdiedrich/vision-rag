@@ -18,8 +18,9 @@ class VisionRAGMCPServer:
     
     def __init__(
         self,
+        encoder_model: str = "clip-ViT-B-32",
         collection_name: str = "mcp_vision_rag",
-        persist_directory: str = "./mcp_chroma_db",
+        persist_directory: str = "./chroma_db_mcp",
     ):
         """
         Initialize MCP server.

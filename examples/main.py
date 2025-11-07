@@ -52,7 +52,7 @@ def main():
     print("\n[5/6] Creating ChromaDB RAG store...")
     rag_store = ChromaRAGStore(
         collection_name="organmnist_demo",
-        persist_directory="./chroma_db",
+        persist_directory="./chroma_db_main",
     )
     
     # Clear any existing data
