@@ -9,8 +9,12 @@ from pathlib import Path
 
 from vision_rag.data_loader import (
     download_organmnist,
+    download_medmnist,
     load_organmnist_data,
+    load_medmnist_data,
     get_image_from_array,
+    get_medmnist_label_names,
+    get_human_readable_label,
     DEFAULT_DATA_DIR,
 )
 
@@ -120,3 +124,48 @@ def test_get_image_from_array():
     assert isinstance(pil_image, Image.Image)
     assert pil_image.size == (28, 28)
     assert pil_image.mode == "RGB"
+
+
+def test_download_medmnist_pathmnist(temp_data_dir):
+    """Test downloading PathMNIST dataset."""
+    download_medmnist(dataset_name="PathMNIST", root=temp_data_dir)
+    data_path = Path(temp_data_dir) / "pathmnist.npz"
+    assert data_path.exists()
+
+
+def test_load_medmnist_data_pathmnist(temp_data_dir):
+    """Test loading PathMNIST data."""
+    download_medmnist(dataset_name="PathMNIST", root=temp_data_dir)
+    images, labels = load_medmnist_data(dataset_name="PathMNIST", split="train", root=temp_data_dir)
+    
+    # Check shapes - PathMNIST is RGB
+    assert images.ndim == 4  # (N, 28, 28, 3)
+    assert images.shape[1:] == (28, 28, 3)
+    assert labels.ndim == 1
+    assert len(images) == len(labels)
+
+
+def test_get_medmnist_label_names():
+    """Test getting label names for OrganSMNIST."""
+    # Ensure dataset exists
+    download_medmnist(dataset_name="OrganSMNIST")
+    
+    label_names = get_medmnist_label_names(dataset_name="OrganSMNIST")
+    assert isinstance(label_names, dict)
+    assert len(label_names) == 11  # OrganSMNIST has 11 classes
+    assert all(isinstance(k, int) for k in label_names.keys())
+    assert all(isinstance(v, str) for v in label_names.values())
+
+
+def test_get_human_readable_label():
+    """Test getting human readable labels."""
+    # Ensure dataset exists
+    download_medmnist(dataset_name="OrganSMNIST")
+    
+    label = get_human_readable_label(0, dataset_name="OrganSMNIST")
+    assert isinstance(label, str)
+    assert len(label) > 0
+    
+    # Test unknown label
+    unknown_label = get_human_readable_label(999, dataset_name="OrganSMNIST")
+    assert "Unknown" in unknown_label

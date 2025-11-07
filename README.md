@@ -5,10 +5,58 @@ A retrieval-augmented generation (RAG) system for medical images using CLIP embe
 ## Overview
 
 This project implements a vision-based RAG system that:
-- Downloads the OrganSMNIST dataset from the MedMNIST collection
+- Downloads medical imaging datasets from the MedMNIST collection (12+ datasets supported)
 - Encodes medical images using CLIP models (default: ViT-B-32, configurable)
 - Stores embeddings in ChromaDB for efficient retrieval
 - Searches for similar images from the training set given test images
+- Supports multiple MedMNIST datasets: OrganSMNIST, PathMNIST, ChestMNIST, DermaMNIST, and more
+
+## Configuration
+
+Vision RAG can be configured using environment variables:
+
+```bash
+# Choose which MedMNIST dataset to use (default: OrganSMNIST)
+export VISION_RAG_DATASET="PathMNIST"  # or ChestMNIST, DermaMNIST, etc.
+
+# Choose CLIP model (default: clip-ViT-B-32)
+export VISION_RAG_CLIP_MODEL="clip-ViT-L-14"
+
+# Configure storage (defaults shown)
+export VISION_RAG_COLLECTION_NAME="vision_rag"
+export VISION_RAG_PERSIST_DIR="./chroma_db"
+```
+
+### Available Datasets
+
+Vision RAG supports 12 MedMNIST datasets:
+
+- **OrganSMNIST** (default): Organ images (sagittal view) - 11 classes
+- **PathMNIST**: Colon pathology images - 9 classes
+- **ChestMNIST**: Chest X-ray images - 14 classes
+- **DermaMNIST**: Dermatoscope images of skin lesions - 7 classes
+- **OCTMNIST**: Retinal OCT images - 4 classes
+- **PneumoniaMNIST**: Chest X-ray for pneumonia detection - 2 classes
+- **RetinaMNIST**: Fundus camera images for diabetic retinopathy - 5 classes
+- **BreastMNIST**: Breast ultrasound images - 2 classes
+- **BloodMNIST**: Blood cell microscope images - 8 classes
+- **TissueMNIST**: Kidney cortex cells - 8 classes
+- **OrganAMNIST**: Organ images (axial view) - 11 classes
+- **OrganCMNIST**: Organ images (coronal view) - 11 classes
+
+You can list available datasets programmatically:
+
+```python
+from vision_rag import list_available_datasets, get_dataset_config
+
+# List all available datasets
+datasets = list_available_datasets()
+print(datasets)
+
+# Get configuration for a specific dataset
+config = get_dataset_config("PathMNIST")
+print(f"Classes: {config['n_classes']}, Channels: {config['channels']}")
+```
 
 ## Installation
 
@@ -46,7 +94,7 @@ deactivate
 
 ## Usage
 
-### Basic Example
+### Basic Example with OrganSMNIST
 
 ```python
 from vision_rag import (
@@ -78,6 +126,76 @@ rag_store = ChromaRAGStore(
 # Add embeddings with metadata
 metadatas = [{"label": int(label)} for label in train_labels]
 rag_store.add_embeddings(embeddings, metadatas=metadatas)
+```
+
+### Using Different MedMNIST Datasets
+
+```python
+from vision_rag import (
+    download_medmnist,
+    load_medmnist_data,
+    get_medmnist_label_names,
+    CLIPImageEncoder,
+    ChromaRAGStore,
+    ImageSearcher,
+)
+
+# Download and load PathMNIST dataset
+download_medmnist(dataset_name="PathMNIST")
+train_images, train_labels = load_medmnist_data(dataset_name="PathMNIST", split="train")
+
+# Get human-readable label names
+label_names = get_medmnist_label_names(dataset_name="PathMNIST")
+print(f"PathMNIST has {len(label_names)} classes: {label_names}")
+
+# Initialize encoder
+encoder = CLIPImageEncoder()
+
+# Encode images
+embeddings = encoder.encode_images([img for img in train_images])
+
+# Create RAG store
+rag_store = ChromaRAGStore(
+    collection_name="pathmnist",
+    persist_directory="./chroma_db_path",
+)
+
+# Add embeddings with metadata
+metadatas = [{"label": int(label), "dataset": "PathMNIST"} for label in train_labels]
+rag_store.add_embeddings(embeddings, metadatas=metadatas)
+
+# Search for similar images
+test_images, test_labels = load_medmnist_data(dataset_name="PathMNIST", split="test")
+searcher = ImageSearcher(encoder=encoder, rag_store=rag_store)
+results = searcher.search(test_images[0], n_results=5)
+
+print(f"Found {len(results['ids'])} similar images")
+print(f"IDs: {results['ids']}")
+print(f"Distances: {results['distances']}")
+```
+
+### Using Environment Variables for Configuration
+
+```python
+import os
+from vision_rag import (
+    MEDMNIST_DATASET,
+    CLIP_MODEL_NAME,
+    download_medmnist,
+    load_medmnist_data,
+)
+
+# Set environment variable before importing (or set in shell)
+os.environ["VISION_RAG_DATASET"] = "ChestMNIST"
+os.environ["VISION_RAG_CLIP_MODEL"] = "clip-ViT-L-14"
+
+# Now the defaults will use ChestMNIST
+print(f"Using dataset: {MEDMNIST_DATASET}")
+print(f"Using CLIP model: {CLIP_MODEL_NAME}")
+
+# Download and load using environment variable defaults
+download_medmnist()  # Downloads ChestMNIST
+train_images, train_labels = load_medmnist_data(split="train")  # Loads ChestMNIST
 
 # Load test data
 test_images, test_labels = load_organmnist_data(split="test", root="./data")
@@ -185,7 +303,19 @@ Run the comprehensive demonstration:
 cd demonstrations && PYTHONPATH=.. uv run python demo_with_visualization.py
 
 # Simple example
+### Demo Scripts
+
+Run the comprehensive demonstration:
+
+```bash
+# Full demonstration with all visualizations
+cd demonstrations && PYTHONPATH=.. uv run python demo_with_visualization.py
+
+# Simple example
 cd demonstrations && uv run python simple_visualization_example.py
+
+# Multi-dataset demonstration (PathMNIST, ChestMNIST, etc.)
+cd demonstrations && PYTHONPATH=.. uv run python multi_dataset_demo.py
 ```
 
 ## Project Structure
@@ -194,7 +324,8 @@ cd demonstrations && uv run python simple_visualization_example.py
 vision-rag/
 ├── vision_rag/
 │   ├── __init__.py
-│   ├── data_loader.py       # OrganSMNIST dataset loading
+│   ├── config.py            # Configuration and dataset definitions
+│   ├── data_loader.py       # MedMNIST dataset loading (12+ datasets)
 │   ├── encoder.py           # CLIP image encoder
 │   ├── rag_store.py         # ChromaDB RAG store
 │   ├── search.py            # Image search functionality
@@ -203,7 +334,8 @@ vision-rag/
 │   └── mcp_server.py        # MCP agent server
 ├── demonstrations/
 │   ├── demo_with_visualization.py    # Comprehensive demonstration
-│   └── simple_visualization_example.py  # Simple example
+│   ├── simple_visualization_example.py  # Simple example
+│   └── multi_dataset_demo.py         # Multi-dataset demonstration
 ├── examples/
 │   └── client_demo.py       # Service client demo
 ├── tests/
@@ -221,7 +353,17 @@ vision-rag/
 
 ## Running as a Service
 
-Vision RAG can be run as a service for agent-to-agent communication:
+Vision RAG can be run as a service for agent-to-agent communication. The service uses the dataset configured via the `VISION_RAG_DATASET` environment variable.
+
+### Service Configuration
+
+```bash
+# Configure which dataset the service should use
+export VISION_RAG_DATASET="PathMNIST"  # Default: OrganSMNIST
+export VISION_RAG_CLIP_MODEL="clip-ViT-B-32"
+export VISION_RAG_COLLECTION_NAME="vision_rag_service"
+export VISION_RAG_PERSIST_DIR="./service_chroma_db"
+```
 
 ### 1. FastAPI REST Service
 
@@ -230,6 +372,9 @@ Start the REST API service:
 ```bash
 # Basic startup (runs on port 8001 by default)
 python run_service.py --mode api
+
+# With specific dataset
+VISION_RAG_DATASET="ChestMNIST" python run_service.py --mode api
 
 # Custom host/port
 python run_service.py --mode api --host 0.0.0.0 --port 8080
@@ -240,10 +385,10 @@ uv run uvicorn vision_rag.service:app --host 0.0.0.0 --port 8001
 
 **API Endpoints:**
 - `GET /` - Service information
-- `GET /health` - Health check
+- `GET /health` - Health check (includes dataset info)
 - `GET /stats` - Get statistics
 - `POST /search` - Search for similar images
-- `POST /search/label` - Search by organ label
+- `POST /search/label` - Search by label (uses configured dataset's labels)
 - `POST /add` - Add a single image
 - `POST /add/batch` - Add multiple images
 - `DELETE /clear` - Clear all embeddings
@@ -257,14 +402,17 @@ Start the Model Context Protocol server for agent communication:
 
 ```bash
 python run_service.py --mode mcp
+
+# With specific dataset
+VISION_RAG_DATASET="DermaMNIST" python run_service.py --mode mcp
 ```
 
 **Available MCP Tools:**
 - `search_similar_images` - Search for visually similar medical images
-- `search_by_label` - Search for images by organ label
+- `search_by_label` - Search for images by label (dataset-specific)
 - `add_image` - Add a medical image to the RAG store
 - `get_statistics` - Get RAG store statistics
-- `list_available_labels` - List all available organ labels
+- `list_available_labels` - List all available labels for the configured dataset
 
 ### 3. Run Both Services
 
@@ -272,6 +420,9 @@ Start both FastAPI and MCP servers simultaneously:
 
 ```bash
 python run_service.py --mode both --port 8001
+
+# With specific dataset
+VISION_RAG_DATASET="PathMNIST" python run_service.py --mode both --port 8001
 ```
 
 ### Example Client Usage
