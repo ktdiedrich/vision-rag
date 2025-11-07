@@ -4,6 +4,12 @@ Example client demonstrating how to interact with the Vision RAG service.
 This shows how AI agents can communicate with the Vision RAG service.
 """
 
+import sys
+from pathlib import Path
+
+# Add project root to path
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
 import asyncio
 import base64
 import io
