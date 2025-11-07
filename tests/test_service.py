@@ -1,7 +1,6 @@
 """Tests for FastAPI service module."""
 
 import pytest
-import base64
 import io
 import numpy as np
 from PIL import Image
