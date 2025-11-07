@@ -1,20 +1,16 @@
 """Model Context Protocol (MCP) server for vision RAG agent communication."""
 
 import asyncio
-import os
 from typing import Any, Dict, List, Optional
 
 from PIL import Image
 
+from .config import CLIP_MODEL_NAME, MEDMNIST_DATASET
 from .encoder import CLIPImageEncoder
 from .rag_store import ChromaRAGStore
 from .search import ImageSearcher
 from .data_loader import get_human_readable_label
 from .utils import decode_base64_image
-
-
-# Configuration
-CLIP_MODEL_NAME = os.getenv("VISION_RAG_CLIP_MODEL", "clip-ViT-B-32")
 
 
 class VisionRAGMCPServer:
@@ -105,7 +101,7 @@ class VisionRAGMCPServer:
             
             # Add human-readable label if available
             if "label" in metadata:
-                result_dict["human_readable_label"] = get_human_readable_label(metadata["label"])
+                result_dict["human_readable_label"] = get_human_readable_label(metadata["label"], dataset_name=MEDMNIST_DATASET)
             
             enriched_results.append(result_dict)
         
@@ -137,7 +133,7 @@ class VisionRAGMCPServer:
         
         return {
             "label": label,
-            "human_readable_label": get_human_readable_label(label),
+            "human_readable_label": get_human_readable_label(label, dataset_name=MEDMNIST_DATASET),
             "ids": results["ids"],
             "metadatas": results["metadatas"],
             "count": len(results["ids"]),

@@ -1,16 +1,13 @@
 """Image encoder using CLIP model."""
 
 from typing import List, Union
-import os
 import numpy as np
 from PIL import Image
 from sentence_transformers import SentenceTransformer
 
+from .config import CLIP_MODEL_NAME
 
-# Configuration
-CLIP_MODEL_NAME = os.getenv("VISION_RAG_CLIP_MODEL", "clip-ViT-B-32")
-
-# Default image size for dummy images (OrganSMNIST dataset dimensions)
+# Default image size for dummy images (MedMNIST dataset dimensions)
 DEFAULT_IMAGE_SIZE = 28
 
 

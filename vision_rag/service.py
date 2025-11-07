@@ -2,24 +2,18 @@
 
 from typing import List, Optional, Dict, Any
 import io
-import os
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException, UploadFile, File
 from pydantic import BaseModel, Field
 from PIL import Image
 
+from .config import CLIP_MODEL_NAME, COLLECTION_NAME, PERSIST_DIRECTORY, MEDMNIST_DATASET
 from .encoder import CLIPImageEncoder
 from .rag_store import ChromaRAGStore
 from .search import ImageSearcher
 from .data_loader import get_human_readable_label
 from .utils import decode_base64_image
-
-
-# Configuration
-CLIP_MODEL_NAME = os.getenv("VISION_RAG_CLIP_MODEL", "clip-ViT-B-32")
-COLLECTION_NAME = os.getenv("VISION_RAG_COLLECTION_NAME", "vision_rag_service")
-PERSIST_DIRECTORY = os.getenv("VISION_RAG_PERSIST_DIR", "./service_chroma_db")
 
 
 # Pydantic models for API requests/responses
@@ -184,7 +178,7 @@ async def search_similar_images(request: SearchRequest):
             # Add human readable label if available
             human_label = None
             if "label" in metadata:
-                human_label = get_human_readable_label(metadata["label"])
+                human_label = get_human_readable_label(metadata["label"], dataset_name=MEDMNIST_DATASET)
             
             search_results.append(
                 SearchResult(
@@ -233,7 +227,7 @@ async def search_by_label(request: SearchByLabelRequest):
         # Format results (no distances for label search)
         search_results = []
         for result_id, metadata in zip(results["ids"], results["metadatas"]):
-            human_label = get_human_readable_label(request.label)
+            human_label = get_human_readable_label(request.label, dataset_name=MEDMNIST_DATASET)
             
             search_results.append(
                 SearchResult(
@@ -247,7 +241,7 @@ async def search_by_label(request: SearchByLabelRequest):
         return SearchResponse(
             query_info={
                 "label": request.label,
-                "human_readable_label": get_human_readable_label(request.label),
+                "human_readable_label": get_human_readable_label(request.label, dataset_name=MEDMNIST_DATASET),
                 "n_results_requested": request.n_results,
             },
             results=search_results,
