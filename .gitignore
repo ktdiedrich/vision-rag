@@ -216,3 +216,9 @@ demonstrations/simple_visualizations/
 demonstrations/simple_chroma/
 *.npz
 scratch.txt
+
+# Makefile service management
+.api.pid
+.mcp.pid
+.both.pid
+logs/

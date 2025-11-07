@@ -69,6 +69,44 @@ This project uses UV for package management. Install dependencies with:
 
 ```bash
 uv sync
+# or
+make install
+```
+
+## Quick Start with Makefile
+
+The project includes a Makefile for common tasks:
+
+```bash
+# View all available commands
+make help
+
+# Install dependencies
+make install
+
+# Run verification tests
+make verify
+
+# Run tests
+make test
+make test-cov  # with coverage
+
+# Start services (detached mode)
+make up-api    # Start FastAPI service
+make up-mcp    # Start MCP server
+make up-both   # Start both services
+
+# Check service status
+make status
+
+# Stop services
+make down
+
+# Run examples
+make examples
+
+# Clean up
+make clean
 ```
 
 ### Activating the UV Environment
