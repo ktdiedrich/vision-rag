@@ -6,6 +6,24 @@ import io
 from PIL import Image, UnidentifiedImageError
 
 
+def encode_image_to_base64(image: Image.Image) -> str:
+    """
+    Encode a PIL Image to a base64 string.
+    
+    Args:
+        image: PIL Image object
+        
+    Returns:
+        Base64 encoded image string
+    """
+    buffer = io.BytesIO()
+    # Save image to buffer in PNG format to preserve quality
+    image.save(buffer, format="PNG")
+    buffer.seek(0)
+    image_bytes = buffer.read()
+    return base64.b64encode(image_bytes).decode('utf-8')
+
+
 def decode_base64_image(image_base64: str) -> Image.Image:
     """
     Decode a base64 encoded image string to a PIL Image.

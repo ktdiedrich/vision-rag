@@ -21,7 +21,7 @@ from .data_loader import (
 from .encoder import CLIPImageEncoder
 from .rag_store import ChromaRAGStore
 from .search import ImageSearcher
-from .utils import decode_base64_image
+from .utils import decode_base64_image, encode_image_to_base64
 from .visualization import RAGVisualizer
 
 
@@ -47,6 +47,7 @@ __all__ = [
     "ChromaRAGStore",
     "ImageSearcher",
     "decode_base64_image",
+    "encode_image_to_base64",
     "RAGVisualizer",
 ]
 
