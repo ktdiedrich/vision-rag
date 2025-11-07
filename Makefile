@@ -1,4 +1,4 @@
-.PHONY: help test test-cov up-api up-mcp up-both down status clean install verify examples
+.PHONY: help test test-cov up-api up-mcp up-both down status clean install verify examples example-main example-client
 
 # Default target
 help:
@@ -19,7 +19,9 @@ help:
 	@echo "  make status      - Check status of running services"
 	@echo ""
 	@echo "Examples:"
-	@echo "  make examples    - Run example demonstrations"
+	@echo "  make examples       - List available example scripts"
+	@echo "  make example-main   - Run main demo script"
+	@echo "  make example-client - Run client demo (requires service)"
 	@echo ""
 	@echo "Cleanup:"
 	@echo "  make clean       - Remove cache and temporary files"
@@ -142,14 +144,40 @@ status:
 
 # Examples
 examples:
-	@echo "Running example demonstrations..."
+	@echo "Available Example Scripts:"
+	@echo "=========================="
 	@echo ""
-	@echo "1. Main demo:"
+	@echo "1. Main Demo (standalone):"
+	@echo "   make example-main"
+	@echo "   - Downloads MedMNIST dataset"
+	@echo "   - Encodes images with CLIP"
+	@echo "   - Stores in ChromaDB"
+	@echo "   - Performs similarity search"
+	@echo ""
+	@echo "2. Client Demo (requires service):"
+	@echo "   make up-api          # Start service first"
+	@echo "   make example-client  # Then run client demo"
+	@echo "   - Tests FastAPI endpoints"
+	@echo "   - Tests MCP agent server"
+	@echo "   - Demonstrates service integration"
+
+example-main:
+	@echo "Running main demo..."
 	python examples/main.py
-	@echo ""
-	@echo "2. Client demo (requires service running):"
-	@echo "   Start service first: make up-api"
-	@echo "   Then run: python examples/client_demo.py"
+
+example-client:
+	@echo "Running client demo..."
+	@if curl -s http://localhost:8001/health > /dev/null 2>&1; then \
+		echo "✓ Service is already running"; \
+		python examples/client_demo.py; \
+	else \
+		echo "⚠️  Service not running, starting it..."; \
+		$(MAKE) up-api; \
+		echo ""; \
+		echo "Waiting for service to be ready..."; \
+		sleep 3; \
+		python examples/client_demo.py; \
+	fi
 
 # Cleanup
 clean:
