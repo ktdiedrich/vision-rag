@@ -44,6 +44,7 @@ test-cov:
 # Service management (detached mode)
 up-api:
 	@echo "Starting FastAPI service in background..."
+	@mkdir -p logs
 	@nohup python scripts/run_service.py --mode api > logs/api.log 2>&1 & echo $$! > .api.pid
 	@sleep 2
 	@if ps -p $$(cat .api.pid) > /dev/null 2>&1; then \
@@ -59,6 +60,7 @@ up-api:
 
 up-mcp:
 	@echo "Starting MCP server in background..."
+	@mkdir -p logs
 	@nohup python scripts/run_service.py --mode mcp > logs/mcp.log 2>&1 & echo $$! > .mcp.pid
 	@sleep 2
 	@if ps -p $$(cat .mcp.pid) > /dev/null 2>&1; then \
@@ -73,6 +75,7 @@ up-mcp:
 
 up-both:
 	@echo "Starting both services in background..."
+	@mkdir -p logs
 	@nohup python scripts/run_service.py --mode both > logs/both.log 2>&1 & echo $$! > .both.pid
 	@sleep 2
 	@if ps -p $$(cat .both.pid) > /dev/null 2>&1; then \
