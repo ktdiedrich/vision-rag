@@ -306,15 +306,6 @@ Run the comprehensive demonstration:
 cd demonstrations && PYTHONPATH=.. uv run python demo_with_visualization.py
 
 # Simple example
-### Demo Scripts
-
-Run the comprehensive demonstration:
-
-```bash
-# Full demonstration with all visualizations
-cd demonstrations && PYTHONPATH=.. uv run python demo_with_visualization.py
-
-# Simple example
 cd demonstrations && uv run python simple_visualization_example.py
 
 # Multi-dataset demonstration (PathMNIST, ChestMNIST, etc.)
