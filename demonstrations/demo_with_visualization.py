@@ -19,6 +19,7 @@ from vision_rag import (
     ChromaRAGStore,
     ImageSearcher,
     RAGVisualizer,
+    CLIP_MODEL_NAME
 )
 
 
@@ -64,7 +65,7 @@ def main():
     
     # Step 4: Initialize encoder and encode subset of training images
     print("\n🧠 Initializing CLIP encoder...")
-    encoder = CLIPImageEncoder(model_name="clip-ViT-B-32")
+    encoder = CLIPImageEncoder(model_name=CLIP_MODEL_NAME)
     print(f"   Embedding dimension: {encoder.embedding_dimension}")
     
     # Use a smaller subset for demonstration to speed up processing
