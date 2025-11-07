@@ -11,6 +11,11 @@ This project implements a vision-based RAG system that:
 - Searches for similar images from the training set given test images
 - Supports multiple MedMNIST datasets: OrganSMNIST, PathMNIST, ChestMNIST, DermaMNIST, and more
 
+## Documentation
+
+- **[Dataset Configuration Guide](docs/DATASET_CONFIG_SUMMARY.md)** - Detailed guide on configuring and using different MedMNIST datasets
+- **[Service Deployment Guide](docs/SERVICE_GUIDE.md)** - Quick start guide for running Vision RAG as a service (FastAPI and MCP)
+
 ## Configuration
 
 Vision RAG can be configured using environment variables:
@@ -331,7 +336,11 @@ vision-rag/
 │   ├── simple_visualization_example.py  # Simple example
 │   └── multi_dataset_demo.py         # Multi-dataset demonstration
 ├── examples/
+│   ├── main.py              # Main demo script
 │   └── client_demo.py       # Service client demo
+├── docs/
+│   ├── DATASET_CONFIG_SUMMARY.md  # Dataset configuration guide
+│   └── SERVICE_GUIDE.md     # Service deployment guide
 ├── tests/
 │   ├── conftest.py
 │   ├── test_basic.py
@@ -344,8 +353,10 @@ vision-rag/
 │   ├── test_visualization.py
 │   ├── test_service.py
 │   └── test_mcp_server.py
-├── scripts/
+├── examples/
 │   ├── main.py              # Main demo script
+│   └── client_demo.py       # Service client demo
+├── scripts/
 │   ├── verify.py            # Verification script
 │   └── run_service.py       # Service runner script
 ├── pyproject.toml
