@@ -12,6 +12,7 @@ from vision_rag import (
     CLIPImageEncoder,
     ChromaRAGStore,
     ImageSearcher,
+    ImageFileStore,
 )
 
 
@@ -60,10 +61,19 @@ def main():
         print("  Clearing existing data...")
         rag_store.clear()
     
-    # Add embeddings with metadata
-    metadatas = [{"label": int(label), "split": "train"} for label in train_labels_subset]
+    # Initialize image store
+    image_store = ImageFileStore(storage_dir="./image_store_main")
+    image_store.clear()
+    
+    # Save images to disk and add embeddings with metadata
+    metadatas = []
+    for i, (img, label) in enumerate(zip(train_images_subset, train_labels_subset)):
+        image_path = image_store.save_image(img, prefix="train")
+        metadatas.append({"label": int(label), "split": "train", "image_path": image_path})
+    
     rag_store.add_embeddings(train_embeddings, metadatas=metadatas)
     print(f"✓ Added {rag_store.count()} embeddings to RAG store")
+    print(f"✓ Saved {image_store.count()} images to disk")
     
     # Step 6: Search with test images
     print("\n[6/6] Searching with test images...")
