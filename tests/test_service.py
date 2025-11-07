@@ -7,7 +7,6 @@ from PIL import Image
 from fastapi.testclient import TestClient
 
 from vision_rag.service import app
-from vision_rag.encoder import CLIPImageEncoder
 from vision_rag.utils import encode_image_to_base64
 
 
