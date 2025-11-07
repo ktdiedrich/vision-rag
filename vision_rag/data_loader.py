@@ -163,7 +163,7 @@ def get_medmnist_label_names(dataset_name: str = None, root: str = None) -> dict
         root = DEFAULT_DATA_DIR
     
     # Check if dataset file exists
-    dataset_filename = dataset_name.lower().replace("mnist", "mnist") + ".npz"
+    dataset_filename = dataset_name.lower() + ".npz"
     dataset_path = Path(root) / dataset_filename
     
     if not dataset_path.exists():
