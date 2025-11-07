@@ -1,7 +1,7 @@
 """Data loading module for MedMNIST datasets."""
 
 from pathlib import Path
-from typing import Tuple, Optional
+from typing import Tuple
 import numpy as np
 import medmnist
 from PIL import Image
