@@ -4,13 +4,13 @@ Startup script for Vision RAG service.
 
 Usage:
     # Start FastAPI service
-    python run_service.py --mode api --port 8001
+    python scripts/run_service.py --mode api --port 8001
     
     # Start MCP agent server
-    python run_service.py --mode mcp
+    python scripts/run_service.py --mode mcp
     
     # Start both
-    python run_service.py --mode both
+    python scripts/run_service.py --mode both
 """
 
 import argparse
@@ -19,7 +19,7 @@ import sys
 from pathlib import Path
 
 # Add project root to path
-sys.path.insert(0, str(Path(__file__).parent))
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 
 def run_api_service(host: str = "0.0.0.0", port: int = 8001):

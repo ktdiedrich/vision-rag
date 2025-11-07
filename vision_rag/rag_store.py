@@ -11,8 +11,8 @@ class ChromaRAGStore:
     
     def __init__(
         self,
-        collection_name: str = "organmnist_images",
-        persist_directory: str = "./chroma_db",
+        collection_name: str = "vision_rag",
+        persist_directory: str = "./chroma_db_store",
     ):
         """
         Initialize the ChromaDB RAG store.

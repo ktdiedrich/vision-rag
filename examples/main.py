@@ -1,5 +1,11 @@
 """Vision-RAG demo application."""
 
+import sys
+from pathlib import Path
+
+# Add project root to path
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
 from vision_rag import (
     download_organmnist,
     load_organmnist_data,
@@ -46,7 +52,7 @@ def main():
     print("\n[5/6] Creating ChromaDB RAG store...")
     rag_store = ChromaRAGStore(
         collection_name="organmnist_demo",
-        persist_directory="./chroma_db",
+        persist_directory="./chroma_db_main",
     )
     
     # Clear any existing data

@@ -11,6 +11,11 @@ This project implements a vision-based RAG system that:
 - Searches for similar images from the training set given test images
 - Supports multiple MedMNIST datasets: OrganSMNIST, PathMNIST, ChestMNIST, DermaMNIST, and more
 
+## Documentation
+
+- **[Dataset Configuration Guide](docs/DATASET_CONFIG_SUMMARY.md)** - Detailed guide on configuring and using different MedMNIST datasets
+- **[Service Deployment Guide](docs/SERVICE_GUIDE.md)** - Quick start guide for running Vision RAG as a service (FastAPI and MCP)
+
 ## Configuration
 
 Vision RAG can be configured using environment variables:
@@ -24,7 +29,7 @@ export VISION_RAG_CLIP_MODEL="clip-ViT-L-14"
 
 # Configure storage (defaults shown)
 export VISION_RAG_COLLECTION_NAME="vision_rag"
-export VISION_RAG_PERSIST_DIR="./chroma_db"
+export VISION_RAG_PERSIST_DIR="./chroma_db_default"
 ```
 
 ### Available Datasets
@@ -64,6 +69,44 @@ This project uses UV for package management. Install dependencies with:
 
 ```bash
 uv sync
+# or
+make install
+```
+
+## Quick Start with Makefile
+
+The project includes a Makefile for common tasks:
+
+```bash
+# View all available commands
+make help
+
+# Install dependencies
+make install
+
+# Run verification tests
+make verify
+
+# Run tests
+make test
+make test-cov  # with coverage
+
+# Start services (detached mode)
+make up-api    # Start FastAPI service
+make up-mcp    # Start MCP server
+make up-both   # Start both services
+
+# Check service status
+make status
+
+# Stop services
+make down
+
+# Run examples
+make examples
+
+# Clean up
+make clean
 ```
 
 ### Activating the UV Environment
@@ -120,7 +163,7 @@ embeddings = encoder.encode_images([img for img in train_images])
 # Create RAG store
 rag_store = ChromaRAGStore(
     collection_name="organmnist",
-    persist_directory="./chroma_db",
+    persist_directory="./chroma_db_example",
 )
 
 # Add embeddings with metadata
@@ -331,7 +374,11 @@ vision-rag/
 │   ├── simple_visualization_example.py  # Simple example
 │   └── multi_dataset_demo.py         # Multi-dataset demonstration
 ├── examples/
+│   ├── main.py              # Main demo script
 │   └── client_demo.py       # Service client demo
+├── docs/
+│   ├── DATASET_CONFIG_SUMMARY.md  # Dataset configuration guide
+│   └── SERVICE_GUIDE.md     # Service deployment guide
 ├── tests/
 │   ├── conftest.py
 │   ├── test_basic.py
@@ -344,7 +391,9 @@ vision-rag/
 │   ├── test_visualization.py
 │   ├── test_service.py
 │   └── test_mcp_server.py
-├── run_service.py           # Service runner script
+├── scripts/
+│   ├── verify.py            # Verification script
+│   └── run_service.py       # Service runner script
 ├── pyproject.toml
 └── README.md
 ```
@@ -360,7 +409,7 @@ Vision RAG can be run as a service for agent-to-agent communication. The service
 export VISION_RAG_DATASET="PathMNIST"  # Default: OrganSMNIST
 export VISION_RAG_CLIP_MODEL="clip-ViT-B-32"
 export VISION_RAG_COLLECTION_NAME="vision_rag_service"
-export VISION_RAG_PERSIST_DIR="./service_chroma_db"
+export VISION_RAG_PERSIST_DIR="./chroma_db_service"
 ```
 
 ### 1. FastAPI REST Service
@@ -369,13 +418,13 @@ Start the REST API service:
 
 ```bash
 # Basic startup (runs on port 8001 by default)
-python run_service.py --mode api
+python scripts/run_service.py --mode api
 
 # With specific dataset
-VISION_RAG_DATASET="ChestMNIST" python run_service.py --mode api
+VISION_RAG_DATASET="ChestMNIST" python scripts/run_service.py --mode api
 
 # Custom host/port
-python run_service.py --mode api --host 0.0.0.0 --port 8080
+python scripts/run_service.py --mode api --host 0.0.0.0 --port 8080
 
 # Or use uvicorn directly
 uv run uvicorn vision_rag.service:app --host 0.0.0.0 --port 8001
@@ -399,10 +448,10 @@ Once running, visit `http://localhost:8001/docs` for interactive Swagger UI docu
 Start the Model Context Protocol server for agent communication:
 
 ```bash
-python run_service.py --mode mcp
+python scripts/run_service.py --mode mcp
 
 # With specific dataset
-VISION_RAG_DATASET="DermaMNIST" python run_service.py --mode mcp
+VISION_RAG_DATASET="DermaMNIST" python scripts/run_service.py --mode mcp
 ```
 
 **Available MCP Tools:**
@@ -417,10 +466,10 @@ VISION_RAG_DATASET="DermaMNIST" python run_service.py --mode mcp
 Start both FastAPI and MCP servers simultaneously:
 
 ```bash
-python run_service.py --mode both --port 8001
+python scripts/run_service.py --mode both --port 8001
 
 # With specific dataset
-VISION_RAG_DATASET="PathMNIST" python run_service.py --mode both --port 8001
+VISION_RAG_DATASET="PathMNIST" python scripts/run_service.py --mode both --port 8001
 ```
 
 ### Example Client Usage

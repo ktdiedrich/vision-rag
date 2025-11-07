@@ -208,10 +208,15 @@ __marimo__/
 
 # Vision-RAG specific
 data/
-chroma_db/
-chroma_db_demo/
+chroma_db*/
 visualizations/
 demonstrations/visualizations/
 demonstrations/simple_visualizations/
-demonstrations/simple_chroma/
 *.npz
+scratch.txt
+
+# Makefile service management
+.api.pid
+.mcp.pid
+.both.pid
+logs/

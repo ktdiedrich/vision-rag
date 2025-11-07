@@ -60,7 +60,7 @@ def main():
     # 2. SET UP RAG SYSTEM
     print("\n🧠 Step 2: Setting up RAG system...")
     encoder = CLIPImageEncoder()
-    rag_store = ChromaRAGStore(collection_name="simple_example", persist_directory="./simple_chroma")
+    rag_store = ChromaRAGStore(collection_name="simple_example", persist_directory="./chroma_db_simple")
     rag_store.clear()
     
     # Encode and add training images

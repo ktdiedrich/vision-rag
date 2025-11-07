@@ -4,13 +4,19 @@ Example client demonstrating how to interact with the Vision RAG service.
 This shows how AI agents can communicate with the Vision RAG service.
 """
 
+import sys
+from pathlib import Path
+
+# Add project root to path
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
 import asyncio
 import base64
 import io
-from pathlib import Path
-
 import httpx
 from PIL import Image
+
+
 async def test_api_service():
     """Test the FastAPI service endpoints."""
     base_url = "http://localhost:8001"
@@ -140,17 +146,17 @@ async def main():
     await test_mcp_server()
     
     # Test API service (requires service to be running)
-    print("\n" + "=" * 60)
+    print("=" * 60)
     print("🌐 Testing FastAPI Service")
     print("=" * 60)
     print("\n⚠️  Make sure the service is running:")
-    print("   python run_service.py --mode api\n")
+    print("   python scripts/run_service.py --mode api\n")
     
     try:
         await test_api_service()
     except httpx.ConnectError:
         print("❌ Could not connect to API service")
-        print("   Start the service with: python run_service.py --mode api")
+        print("   Start the service with: python scripts/run_service.py --mode api")
     
     print("\n✅ Demo complete!")
 
