@@ -209,4 +209,6 @@ clean-rag:
 	@if ls demonstrations/chroma_db_* > /dev/null 2>&1; then \
 		rm -rf demonstrations/chroma_db_*; \
 		echo "✓ Removed demonstrations/chroma_db_* directories"; \
+	else \
+		echo "✓ No demonstrations/chroma_db_* directories found"; \
 	fi
