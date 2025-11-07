@@ -391,9 +391,6 @@ vision-rag/
 │   ├── test_visualization.py
 │   ├── test_service.py
 │   └── test_mcp_server.py
-├── examples/
-│   ├── main.py              # Main demo script
-│   └── client_demo.py       # Service client demo
 ├── scripts/
 │   ├── verify.py            # Verification script
 │   └── run_service.py       # Service runner script
