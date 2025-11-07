@@ -7,10 +7,10 @@ This shows how AI agents can communicate with the Vision RAG service.
 import asyncio
 import base64
 import io
-from pathlib import Path
-
 import httpx
 from PIL import Image
+
+
 async def test_api_service():
     """Test the FastAPI service endpoints."""
     base_url = "http://localhost:8001"
