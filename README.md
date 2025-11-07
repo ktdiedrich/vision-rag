@@ -220,12 +220,15 @@ uv run pytest
 Run specific test files:
 
 ```bash
+uv run pytest tests/test_config.py
 uv run pytest tests/test_data_loader.py
 uv run pytest tests/test_encoder.py
 uv run pytest tests/test_rag_store.py
 uv run pytest tests/test_search.py
 uv run pytest tests/test_integration.py
 uv run pytest tests/test_visualization.py
+uv run pytest tests/test_service.py
+uv run pytest tests/test_mcp_server.py
 ```
 
 ### Code Coverage
@@ -340,12 +343,16 @@ vision-rag/
 │   └── client_demo.py       # Service client demo
 ├── tests/
 │   ├── conftest.py
+│   ├── test_basic.py
+│   ├── test_config.py
 │   ├── test_data_loader.py
 │   ├── test_encoder.py
 │   ├── test_rag_store.py
 │   ├── test_search.py
 │   ├── test_integration.py
-│   └── test_visualization.py
+│   ├── test_visualization.py
+│   ├── test_service.py
+│   └── test_mcp_server.py
 ├── run_service.py           # Service runner script
 ├── pyproject.toml
 └── README.md
