@@ -34,7 +34,7 @@ def download_medmnist(dataset_name: str = None, root: str = None) -> None:
     config = get_dataset_config(dataset_name)
     
     # Check if dataset file already exists
-    dataset_filename = dataset_name.lower().replace("mnist", "mnist") + ".npz"
+    dataset_filename = dataset_name.lower() + ".npz"
     dataset_path = root_path / dataset_filename
     
     if dataset_path.exists():
