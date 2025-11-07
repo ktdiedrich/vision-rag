@@ -13,7 +13,7 @@ def mcp_server():
     """Create an MCP server instance for testing."""
     server = VisionRAGMCPServer(
         collection_name="test_mcp_collection",
-        persist_directory="./test_mcp_chroma_db",
+        persist_directory="./chroma_db_test_mcp",
     )
     
     yield server
