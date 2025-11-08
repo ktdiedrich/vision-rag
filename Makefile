@@ -1,4 +1,4 @@
-.PHONY: help test test-cov up-api up-mcp up-both down status clean clean-rag clean-images install verify examples example-main example-client demo demo-simple demo-full demo-multi
+.PHONY: help test test-cov up-api up-mcp up-both down status clean clean-rag clean-images clean-output install verify examples example-main example-client demo demo-simple demo-full demo-multi
 
 # Default target
 help:
@@ -33,6 +33,7 @@ help:
 	@echo "  make clean         - Remove cache and temporary files"
 	@echo "  make clean-rag     - Remove RAG database directories"
 	@echo "  make clean-images  - Remove image store directories"
+	@echo "  make clean-output  - Remove visualization output directories"
 
 # Installation
 install:
@@ -198,13 +199,13 @@ demo:
 	@echo "Simple Visualization Demo (fast, 50 images):"
 	@echo "   make demo-simple"
 	@echo "   - Quick demonstration of core functionality"
-	@echo "   - Creates 5 visualization files in simple_visualizations/"
+	@echo "   - Creates 5 visualization files in output/simple_visualizations/"
 	@echo "   - Perfect for understanding basic concepts"
 	@echo ""
 	@echo "Full Visualization Demo (1000 images):"
 	@echo "   make demo-full"
 	@echo "   - Comprehensive demonstration with full analysis"
-	@echo "   - Creates 9 visualization files in visualizations/"
+	@echo "   - Creates 9 visualization files in output/visualizations/"
 	@echo "   - Includes embedding space analysis (t-SNE)"
 	@echo "   - Shows multiple search scenarios"
 	@echo ""
@@ -216,12 +217,12 @@ demo:
 
 demo-simple:
 	@echo "Running simple visualization demo..."
-	@echo "This will create visualizations in demonstrations/simple_visualizations/"
+	@echo "This will create visualizations in demonstrations/output/simple_visualizations/"
 	cd demonstrations && uv run python simple_visualization_example.py
 
 demo-full:
 	@echo "Running full visualization demo..."
-	@echo "This will create visualizations in demonstrations/visualizations/"
+	@echo "This will create visualizations in demonstrations/output/visualizations/"
 	@echo "⚠️  This demo uses 1000 images and may take a few minutes..."
 	cd demonstrations && uv run python demo_with_visualization.py
 
@@ -272,4 +273,19 @@ clean-images:
 		echo "✓ Removed demonstrations/image_store_* directories"; \
 	else \
 		echo "✓ No demonstrations/image_store_* directories found"; \
+	fi
+
+clean-output:
+	@echo "Removing visualization output directories..."
+	@if [ -d output ]; then \
+		rm -rf output; \
+		echo "✓ Removed output/ directory"; \
+	else \
+		echo "✓ No output/ directory found"; \
+	fi
+	@if [ -d demonstrations/output ]; then \
+		rm -rf demonstrations/output; \
+		echo "✓ Removed demonstrations/output/ directory"; \
+	else \
+		echo "✓ No demonstrations/output/ directory found"; \
 	fi

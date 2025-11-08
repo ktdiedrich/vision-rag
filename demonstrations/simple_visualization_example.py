@@ -33,7 +33,7 @@ def main():
     print("=" * 40)
     
     # Initialize components
-    visualizer = RAGVisualizer(output_dir="./simple_visualizations")
+    visualizer = RAGVisualizer(output_dir="./output/simple_visualizations")
     print(f"Visualizations will be saved to: {visualizer.output_dir}")
     
     # Load small subset of data for quick example

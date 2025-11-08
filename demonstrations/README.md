@@ -16,7 +16,7 @@ A quick demonstration that shows the core functionality:
 uv run python simple_visualization_example.py
 ```
 
-**Output:** Creates `simple_visualizations/` directory with:
+**Output:** Creates `output/simple_visualizations/` directory with:
 - `input_to_rag_store.png` - Sample training images
 - `search_query_images.png` - Query images for search
 - `search_results_1-3.png` - Search results with similarities
@@ -34,7 +34,7 @@ Comprehensive demonstration with full analysis:
 PYTHONPATH=.. uv run python demo_with_visualization.py
 ```
 
-**Output:** Creates `visualizations/` directory with:
+**Output:** Creates `output/visualizations/` directory with:
 - `01_input_images_to_rag.png` - Sample training images grid
 - `02_label_distribution.png` - Dataset label distribution
 - `03_embedding_space_tsne.png` - t-SNE visualization of embeddings
@@ -44,8 +44,8 @@ PYTHONPATH=.. uv run python demo_with_visualization.py
 ## Generated Files
 
 Both scripts create their own output directories to avoid conflicts:
-- Simple example → `simple_visualizations/`
-- Full demo → `visualizations/`
+- Simple example → `output/simple_visualizations/`
+- Full demo → `output/visualizations/`
 
 ## Requirements
 

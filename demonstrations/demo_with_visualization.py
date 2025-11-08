@@ -9,6 +9,12 @@ This script demonstrates the full pipeline:
 4. Creating various analysis visualizations
 """
 
+import sys
+from pathlib import Path
+
+# Add parent directory to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
 import numpy as np
 
 from vision_rag import (
@@ -31,7 +37,7 @@ def main():
     print("=" * 60)
     
     # Initialize visualizer
-    visualizer = RAGVisualizer(output_dir="./visualizations")
+    visualizer = RAGVisualizer(output_dir="./output/visualizations")
     print(f"📊 Visualizations will be saved to: {visualizer.output_dir}")
     
     # Step 1: Load data
