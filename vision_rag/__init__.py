@@ -5,11 +5,12 @@ from .config import (
     MEDMNIST_DATASET,
     COLLECTION_NAME,
     PERSIST_DIRECTORY,
+    IMAGE_SIZE,
+    MEDMNIST_SIZE,
     get_dataset_config,
     list_available_datasets,
 )
 from .data_loader import (
-    download_organmnist,
     download_medmnist,
     load_organmnist_data,
     load_medmnist_data,
@@ -32,10 +33,11 @@ __all__ = [
     "MEDMNIST_DATASET",
     "COLLECTION_NAME",
     "PERSIST_DIRECTORY",
+    "IMAGE_SIZE",
+    "MEDMNIST_SIZE",
     "get_dataset_config",
     "list_available_datasets",
     # Data loading
-    "download_organmnist",
     "download_medmnist",
     "load_organmnist_data",
     "load_medmnist_data",

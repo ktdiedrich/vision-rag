@@ -343,3 +343,95 @@ class TestGenerateImageId:
         
         assert isinstance(image_id, str)
         assert len(image_id) == 16  # First 16 chars of hash
+
+
+class TestImageResizing:
+    """Tests for image resizing functionality."""
+    
+    def test_resize_on_save_grayscale(self, temp_store_dir):
+        """Test that images are resized when image_size is set (grayscale)."""
+        store = ImageFileStore(storage_dir=temp_store_dir, image_size=64)
+        
+        # Create a larger image
+        large_image = Image.new('L', (200, 200), color=128)
+        
+        # Save image
+        path = store.save_image(large_image)
+        
+        # Load and check size
+        loaded_image = Image.open(path)
+        assert loaded_image.size == (64, 64)
+    
+    def test_resize_on_save_rgb(self, temp_store_dir):
+        """Test that RGB images are resized when image_size is set."""
+        store = ImageFileStore(storage_dir=temp_store_dir, image_size=128)
+        
+        # Create a larger RGB image
+        large_image = Image.new('RGB', (300, 300), color=(255, 0, 0))
+        
+        # Save image
+        path = store.save_image(large_image)
+        
+        # Load and check size
+        loaded_image = Image.open(path)
+        assert loaded_image.size == (128, 128)
+        assert loaded_image.mode == 'RGB'
+    
+    def test_resize_numpy_array(self, temp_store_dir):
+        """Test that numpy arrays are resized correctly."""
+        store = ImageFileStore(storage_dir=temp_store_dir, image_size=32)
+        
+        # Create a numpy array image
+        large_array = np.random.randint(0, 255, size=(100, 100, 3), dtype=np.uint8)
+        
+        # Save image
+        path = store.save_image(large_array)
+        
+        # Load and check size
+        loaded_image = Image.open(path)
+        assert loaded_image.size == (32, 32)
+    
+    def test_no_resize_when_none(self, temp_store_dir):
+        """Test that images are not resized when image_size is None."""
+        store = ImageFileStore(storage_dir=temp_store_dir, image_size=None)
+        
+        # Create an image with specific size
+        original_image = Image.new('RGB', (150, 150), color=(0, 255, 0))
+        
+        # Save image
+        path = store.save_image(original_image)
+        
+        # Load and check size - should be unchanged
+        loaded_image = Image.open(path)
+        assert loaded_image.size == (150, 150)
+    
+    def test_resize_upscaling(self, temp_store_dir):
+        """Test that small images are upscaled when image_size is larger."""
+        store = ImageFileStore(storage_dir=temp_store_dir, image_size=100)
+        
+        # Create a small image
+        small_image = Image.new('L', (28, 28), color=200)
+        
+        # Save image
+        path = store.save_image(small_image)
+        
+        # Load and check size - should be upscaled
+        loaded_image = Image.open(path)
+        assert loaded_image.size == (100, 100)
+    
+    def test_resize_preserves_mode(self, temp_store_dir):
+        """Test that resizing preserves image mode."""
+        store = ImageFileStore(storage_dir=temp_store_dir, image_size=50)
+        
+        # Test grayscale
+        gray_image = Image.new('L', (100, 100), color=128)
+        path1 = store.save_image(gray_image, prefix="gray")
+        loaded1 = Image.open(path1)
+        assert loaded1.mode == 'L'
+        
+        # Test RGB
+        rgb_image = Image.new('RGB', (100, 100), color=(255, 128, 0))
+        path2 = store.save_image(rgb_image, prefix="rgb")
+        loaded2 = Image.open(path2)
+        assert loaded2.mode == 'RGB'
+

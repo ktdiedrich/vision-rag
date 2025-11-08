@@ -3,7 +3,7 @@
 import asyncio
 from typing import Any, Dict, List, Optional
 
-from .config import CLIP_MODEL_NAME, MEDMNIST_DATASET
+from .config import CLIP_MODEL_NAME, MEDMNIST_DATASET, IMAGE_SIZE
 from .encoder import CLIPImageEncoder
 from .rag_store import ChromaRAGStore
 from .search import ImageSearcher
@@ -21,6 +21,7 @@ class VisionRAGMCPServer:
         collection_name: str = "mcp_vision_rag",
         persist_directory: str = "./chroma_db_mcp",
         image_store_dir: str = "./image_store_mcp",
+        image_size: Optional[int] = IMAGE_SIZE,
     ):
         """
         Initialize MCP server.
@@ -30,13 +31,16 @@ class VisionRAGMCPServer:
             collection_name: ChromaDB collection name
             persist_directory: Directory for persistent storage
             image_store_dir: Directory for image file storage
+            image_size: Target size for storing images (width and height).
+                       If provided, images will be resized to (image_size, image_size).
+                       If None, images are stored at original size.
         """
         self.encoder = CLIPImageEncoder(model_name=encoder_model)
         self.rag_store = ChromaRAGStore(
             collection_name=collection_name,
             persist_directory=persist_directory,
         )
-        self.image_store = ImageFileStore(storage_dir=image_store_dir)
+        self.image_store = ImageFileStore(storage_dir=image_store_dir, image_size=image_size)
         self.searcher = ImageSearcher(encoder=self.encoder, rag_store=self.rag_store)
         
         # MCP protocol handlers
