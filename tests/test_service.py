@@ -117,6 +117,63 @@ class TestStatsEndpoint:
         assert new_count == initial_count + 1
 
 
+class TestLabelsEndpoint:
+    """Tests for the labels endpoint."""
+    
+    def test_get_labels_success(self, client):
+        """Test getting labels when dataset is available."""
+        response = client.get("/labels")
+        
+        # Should succeed if dataset is available (200) or fail with 404 if not downloaded
+        assert response.status_code in [200, 404]
+        
+        if response.status_code == 200:
+            data = response.json()
+            assert "labels" in data
+            assert "count" in data
+            assert "dataset" in data
+            assert isinstance(data["labels"], dict)
+            assert isinstance(data["count"], int)
+            assert data["count"] == len(data["labels"])
+    
+    def test_get_labels_file_not_found(self, client, monkeypatch):
+        """Test labels endpoint returns 404 when dataset file doesn't exist."""
+        from vision_rag import data_loader
+        
+        def mock_get_medmnist_label_names(*args, **kwargs):
+            raise FileNotFoundError(
+                "OrganSMNIST dataset (size=224) not found at /path/to/data/organsmnist_224.npz. "
+                "Please download the dataset first by calling download_medmnist('OrganSMNIST', size=224) "
+                "or load_medmnist_data('OrganSMNIST', size=224)."
+            )
+        
+        monkeypatch.setattr(data_loader, "get_medmnist_label_names", mock_get_medmnist_label_names)
+        
+        response = client.get("/labels")
+        assert response.status_code == 404
+        
+        data = response.json()
+        assert "detail" in data
+        assert "Dataset not found" in data["detail"]
+        assert "OrganSMNIST" in data["detail"]
+    
+    def test_get_labels_other_error(self, client, monkeypatch):
+        """Test labels endpoint returns 500 for other errors."""
+        from vision_rag import data_loader
+        
+        def mock_get_medmnist_label_names(*args, **kwargs):
+            raise ValueError("Invalid dataset configuration")
+        
+        monkeypatch.setattr(data_loader, "get_medmnist_label_names", mock_get_medmnist_label_names)
+        
+        response = client.get("/labels")
+        assert response.status_code == 500
+        
+        data = response.json()
+        assert "detail" in data
+        assert "Failed to retrieve labels" in data["detail"]
+
+
 class TestSearchEndpoint:
     """Tests for the search endpoint."""
     
