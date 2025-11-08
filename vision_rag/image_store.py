@@ -84,6 +84,10 @@ class ImageFileStore:
         else:
             pil_image = image
         
+        # Generate image ID if not provided (before resizing to ensure consistency)
+        if image_id is None:
+            image_id = self._generate_image_id(pil_image)
+        
         # Resize image if target size is configured
         if self.image_size is not None:
             # Use LANCZOS for high-quality downsampling
@@ -91,10 +95,6 @@ class ImageFileStore:
                 (self.image_size, self.image_size),
                 Image.Resampling.LANCZOS
             )
-        
-        # Generate image ID if not provided
-        if image_id is None:
-            image_id = self._generate_image_id(pil_image)
         
         # Create filename with appropriate extension
         filename = f"{prefix}_{image_id}.png"
