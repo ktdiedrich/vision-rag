@@ -23,7 +23,7 @@ def verify_imports():
     print("✓ Testing module imports...")
     try:
         from vision_rag import (
-            download_organmnist,
+            download_medmnist,
             load_organmnist_data,
             CLIPImageEncoder,
             ChromaRAGStore,

@@ -4,13 +4,16 @@ import pytest
 import tempfile
 import shutil
 
-from vision_rag import (
-    download_organmnist,
+from vision_rag.data_loader import (
+    download_medmnist,
     load_organmnist_data,
-    CLIPImageEncoder,
-    ChromaRAGStore,
-    ImageSearcher,
 )
+from vision_rag.encoder import CLIPImageEncoder
+from vision_rag.rag_store import ChromaRAGStore
+from vision_rag.search import ImageSearcher
+
+# Use 28x28 size for faster test execution
+TEST_INTEGRATION_SIZE = 28
 
 
 @pytest.fixture
@@ -33,10 +36,10 @@ def test_end_to_end_pipeline(temp_data_dir, temp_db_dir):
     """Test the complete vision-RAG pipeline end-to-end."""
     
     # Step 1: Download OrganSMNIST dataset
-    download_organmnist(root=temp_data_dir)
+    download_medmnist(dataset_name="OrganSMNIST", root=temp_data_dir, size=TEST_INTEGRATION_SIZE)
     
     # Step 2: Load training data (use a small subset for testing)
-    train_images, train_labels = load_organmnist_data(split="train", root=temp_data_dir)
+    train_images, train_labels = load_organmnist_data(split="train", root=temp_data_dir, size=TEST_INTEGRATION_SIZE)
     
     # Use only first 20 images for faster testing
     train_images_subset = train_images[:20]
@@ -107,8 +110,8 @@ def test_pipeline_with_same_image(temp_data_dir, temp_db_dir):
     """Test that searching with a training image returns itself as the top result."""
     
     # Download and load data
-    download_organmnist(root=temp_data_dir)
-    train_images, train_labels = load_organmnist_data(split="train", root=temp_data_dir)
+    download_medmnist(dataset_name="OrganSMNIST", root=temp_data_dir, size=TEST_INTEGRATION_SIZE)
+    train_images, train_labels = load_organmnist_data(split="train", root=temp_data_dir, size=TEST_INTEGRATION_SIZE)
     
     # Use small subset
     train_images_subset = train_images[:10]

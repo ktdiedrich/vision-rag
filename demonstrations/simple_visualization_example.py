@@ -99,8 +99,8 @@ def main():
     
     # 4. PERFORM SEARCHES AND VISUALIZE RESULTS
     print("\n🎯 Step 4: Performing searches and visualizing results...")
-    
-    for i, (query_img, query_label) in enumerate(zip(query_images[:3], query_labels[:3])):
+
+    for i, (query_img, query_label) in enumerate(zip(query_images, query_labels)):
         query_name = get_human_readable_label(query_label)
         print(f"\n  Search {i+1}: Query with label {query_label} ({query_name})")
         

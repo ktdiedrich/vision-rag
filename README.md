@@ -29,12 +29,22 @@ export VISION_RAG_CLIP_MODEL="clip-ViT-L-14"
 
 # Configure storage (defaults shown)
 export VISION_RAG_COLLECTION_NAME="vision_rag"
-export VISION_RAG_PERSIST_DIR="./chroma_db_default"
+export VISION_RAG_PERSIST_DIR="./chroma_db_api"
+
+# Configure MedMNIST dataset size (default: 224)
+# MedMNIST datasets are available in 28, 64, 128, and 224 pixel sizes
+# 224 matches CLIP's input size for optimal quality
+export VISION_RAG_MEDMNIST_SIZE="224"
+
+# Configure image storage size (default: 224x224 for CLIP compatibility)
+# Images will be resized to this size before saving to disk
+# Set to "none" to disable resizing and store images at original size
+export VISION_RAG_IMAGE_SIZE="224"
 ```
 
 ### Available Datasets
 
-Vision RAG supports 12 MedMNIST datasets:
+Vision RAG supports 12 MedMNIST datasets. All datasets are available in multiple sizes (28, 64, 128, and 224 pixels) and are downloaded at 224×224 by default for optimal CLIP compatibility:
 
 - **OrganSMNIST** (default): Organ images (sagittal view) - 11 classes
 - **PathMNIST**: Colon pathology images - 9 classes
@@ -61,6 +71,33 @@ print(datasets)
 # Get configuration for a specific dataset
 config = get_dataset_config("PathMNIST")
 print(f"Classes: {config['n_classes']}, Channels: {config['channels']}")
+```
+
+### Dataset Sizes
+
+MedMNIST datasets are available in multiple resolutions:
+- **28×28**: Original MedMNIST size (smallest, fastest downloads)
+- **64×64**: Medium resolution
+- **128×128**: High resolution
+- **224×224**: Highest resolution, matches CLIP's native input size (default)
+
+**Default Configuration:**
+- Downloads use **224×224** for maximum quality and CLIP compatibility
+- Storage also uses **224×224** to match (configurable via `VISION_RAG_IMAGE_SIZE`)
+- CLIP internally processes all images at 224×224
+
+**To use a different size:**
+```python
+from vision_rag import download_medmnist, load_medmnist_data
+
+# Download smaller size for faster processing
+download_medmnist("PathMNIST", size=28)
+images, labels = load_medmnist_data("PathMNIST", size=28)
+```
+
+Or via environment variable:
+```bash
+export VISION_RAG_MEDMNIST_SIZE="28"  # For smaller, faster downloads
 ```
 
 ## Installation
@@ -141,7 +178,7 @@ deactivate
 
 ```python
 from vision_rag import (
-    download_organmnist,
+    download_medmnist,
     load_organmnist_data,
     CLIPImageEncoder,
     ChromaRAGStore,
@@ -149,7 +186,7 @@ from vision_rag import (
 )
 
 # Download dataset (uses permanent data directory by default)
-download_organmnist()
+download_medmnist(dataset_name="OrganSMNIST")
 
 # Load training data (automatically downloads if not present)
 train_images, train_labels = load_organmnist_data(split="train")
@@ -410,6 +447,45 @@ export VISION_RAG_DATASET="PathMNIST"  # Default: OrganSMNIST
 export VISION_RAG_CLIP_MODEL="clip-ViT-B-32"
 export VISION_RAG_COLLECTION_NAME="vision_rag_service"
 export VISION_RAG_PERSIST_DIR="./chroma_db_service"
+export VISION_RAG_IMAGE_SIZE="224"  # Resize images to 224x224 before storage
+```
+
+### Image Storage and Resizing
+
+Vision RAG automatically resizes images before storing them on disk to optimize storage and ensure consistency. By default, images are resized to **224x224** pixels (CLIP's native input size).
+
+**Configuration Options:**
+
+```bash
+# Default: Resize to 224x224 (recommended for CLIP compatibility)
+export VISION_RAG_IMAGE_SIZE="224"
+
+# Store smaller images (e.g., MedMNIST native size)
+export VISION_RAG_IMAGE_SIZE="28"
+
+# Disable resizing - store images at original size
+export VISION_RAG_IMAGE_SIZE="none"
+```
+
+**Key Points:**
+- Images uploaded via API (`/add`, `/add/batch`) are automatically resized before saving
+- Resizing uses high-quality LANCZOS resampling for best results
+- CLIP encoder handles its own internal resizing for embedding generation (always 224x224)
+- Resizing reduces storage requirements while maintaining image quality
+- Original aspect ratios are not preserved - images are resized to square dimensions
+
+**Programmatic Usage:**
+
+```python
+from vision_rag import ImageFileStore
+
+# With automatic resizing to 224x224
+store = ImageFileStore(storage_dir="./images", image_size=224)
+path = store.save_image(large_image)  # Automatically resized
+
+# Without resizing
+store = ImageFileStore(storage_dir="./images", image_size=None)
+path = store.save_image(large_image)  # Saved at original size
 ```
 
 ### 1. FastAPI REST Service

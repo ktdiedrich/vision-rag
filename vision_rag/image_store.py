@@ -16,15 +16,19 @@ class ImageFileStore:
     storing full images in the database.
     """
     
-    def __init__(self, storage_dir: str = "./image_store"):
+    def __init__(self, storage_dir: str = "./image_store", image_size: Optional[int] = None):
         """
         Initialize the image file store.
         
         Args:
             storage_dir: Directory where images will be saved
+            image_size: Optional target size for images (width and height). 
+                       If provided, images will be resized to (image_size, image_size) before saving.
+                       If None, images are saved at their original size.
         """
         self.storage_dir = Path(storage_dir)
         self.storage_dir.mkdir(parents=True, exist_ok=True)
+        self.image_size = image_size
     
     def _generate_image_id(self, image: Union[Image.Image, np.ndarray]) -> str:
         """
@@ -80,9 +84,17 @@ class ImageFileStore:
         else:
             pil_image = image
         
-        # Generate image ID if not provided
+        # Generate image ID if not provided (before resizing to ensure consistency)
         if image_id is None:
             image_id = self._generate_image_id(pil_image)
+        
+        # Resize image if target size is configured
+        if self.image_size is not None:
+            # Use LANCZOS for high-quality downsampling
+            pil_image = pil_image.resize(
+                (self.image_size, self.image_size),
+                Image.Resampling.LANCZOS
+            )
         
         # Create filename with appropriate extension
         filename = f"{prefix}_{image_id}.png"

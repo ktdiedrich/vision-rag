@@ -9,7 +9,7 @@ from fastapi import FastAPI, HTTPException, UploadFile, File
 from pydantic import BaseModel, Field
 from PIL import Image
 
-from .config import CLIP_MODEL_NAME, COLLECTION_NAME, PERSIST_DIRECTORY, MEDMNIST_DATASET
+from .config import CLIP_MODEL_NAME, COLLECTION_NAME, PERSIST_DIRECTORY, MEDMNIST_DATASET, IMAGE_SIZE
 from .encoder import CLIPImageEncoder
 from .rag_store import ChromaRAGStore
 from .search import ImageSearcher
@@ -98,9 +98,12 @@ async def lifespan(app: FastAPI):
     )
     print(f"✅ Connected to ChromaDB ({rag_store.count()} embeddings)")
     
-    # Initialize image store
-    image_store = ImageFileStore(storage_dir="./image_store_api")
-    print(f"✅ Image store ready ({image_store.count()} images)")
+    # Initialize image store with configured image size
+    image_store = ImageFileStore(storage_dir="./image_store_api", image_size=IMAGE_SIZE)
+    if IMAGE_SIZE:
+        print(f"✅ Image store ready ({image_store.count()} images, resize to {IMAGE_SIZE}x{IMAGE_SIZE})")
+    else:
+        print(f"✅ Image store ready ({image_store.count()} images, no resizing)")
     
     # Initialize searcher
     searcher = ImageSearcher(encoder=encoder, rag_store=rag_store)
