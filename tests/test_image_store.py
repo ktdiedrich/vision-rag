@@ -101,6 +101,18 @@ class TestSaveImage:
         loaded_img = Image.open(image_path)
         assert loaded_img.mode == 'RGB'
     
+    def test_save_numpy_array_rgba(self, image_store):
+        """Test saving an RGBA numpy array."""
+        rgba_array = np.random.randint(0, 255, size=(28, 28, 4), dtype=np.uint8)
+        image_path = image_store.save_image(rgba_array)
+        
+        assert image_path is not None
+        assert Path(image_path).exists()
+        
+        # Verify image can be loaded
+        loaded_img = Image.open(image_path)
+        assert loaded_img.mode == 'RGBA'
+    
     def test_save_with_custom_id(self, image_store, sample_image):
         """Test saving with a custom image ID."""
         custom_id = "custom_123"

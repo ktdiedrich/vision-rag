@@ -72,6 +72,9 @@ class ImageFileStore:
             # Handle RGB images
             elif image.ndim == 3 and image.shape[2] == 3:
                 pil_image = Image.fromarray(image.astype(np.uint8), mode='RGB')
+            # Handle RGBA images
+            elif image.ndim == 3 and image.shape[2] == 4:
+                pil_image = Image.fromarray(image.astype(np.uint8), mode='RGBA')
             else:
                 raise ValueError(f"Unsupported image shape: {image.shape}")
         else:
