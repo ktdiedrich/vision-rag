@@ -191,6 +191,11 @@ async def get_available_labels():
             count=len(label_names),
             dataset=MEDMNIST_DATASET,
         )
+    except FileNotFoundError as e:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Dataset not found: {str(e)}"
+        )
     except Exception as e:
         raise HTTPException(
             status_code=500,
