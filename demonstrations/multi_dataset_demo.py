@@ -22,6 +22,7 @@ from vision_rag import (
     CLIPImageEncoder,
     ChromaRAGStore,
     ImageSearcher,
+    ImageFileStore,
 )
 
 
@@ -77,17 +78,23 @@ def main():
     subset_labels = train_labels[:100]
     embeddings = encoder.encode_images([img for img in subset_images])
     
-    # Create RAG store
-    print("Creating RAG store...")
+    # Create RAG store and image store
+    print("Creating RAG store and image store...")
     rag_store = ChromaRAGStore(
         collection_name="pathmnist_demo",
-        persist_directory="./demo_chroma_db",
+        persist_directory="./chroma_db_multi_demo",
     )
+    image_store = ImageFileStore(storage_dir="./image_store_multi_demo")
     
-    # Add embeddings
-    metadatas = [{"label": int(label), "dataset": "PathMNIST"} for label in subset_labels]
+    # Save images and add embeddings
+    metadatas = []
+    for i, (img, label) in enumerate(zip(subset_images, subset_labels)):
+        image_path = image_store.save_image(img, prefix="path")
+        metadatas.append({"label": int(label), "dataset": "PathMNIST", "image_path": image_path})
+    
     rag_store.add_embeddings(embeddings, metadatas=metadatas)
     print(f"Added {rag_store.count()} embeddings to RAG store")
+    print(f"Saved {image_store.count()} images to disk")
     
     # 4. Search for similar images
     print("\n4. Searching for Similar Images")

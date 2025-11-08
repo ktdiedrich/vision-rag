@@ -9,6 +9,12 @@ This script demonstrates the full pipeline:
 4. Creating various analysis visualizations
 """
 
+import sys
+from pathlib import Path
+
+# Add parent directory to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
 import numpy as np
 
 from vision_rag import (
@@ -19,6 +25,7 @@ from vision_rag import (
     ChromaRAGStore,
     ImageSearcher,
     RAGVisualizer,
+    ImageFileStore,
     CLIP_MODEL_NAME
 )
 
@@ -30,7 +37,7 @@ def main():
     print("=" * 60)
     
     # Initialize visualizer
-    visualizer = RAGVisualizer(output_dir="./visualizations")
+    visualizer = RAGVisualizer(output_dir="./output/visualizations")
     print(f"📊 Visualizations will be saved to: {visualizer.output_dir}")
     
     # Step 1: Load data
@@ -88,10 +95,20 @@ def main():
     # Clear any existing data
     rag_store.clear()
     
-    # Add embeddings with metadata
-    metadatas = [{"label": label} for label in subset_labels]
+    # Initialize image store
+    image_store = ImageFileStore(storage_dir="./image_store_demo")
+    image_store.clear()
+    
+    # Save images to disk and add embeddings with metadata including paths
+    print(f"\n💾 Saving images to disk...")
+    metadatas = []
+    for i, (image, label) in enumerate(zip(subset_images, subset_labels)):
+        image_path = image_store.save_image(image, prefix="train")
+        metadatas.append({"label": label, "image_path": image_path})
+    
     rag_store.add_embeddings(train_embeddings, metadatas=metadatas)
     print(f"   Added {rag_store.count()} embeddings to RAG store")
+    print(f"   Saved {image_store.count()} images to disk")
     
     # Step 6: Visualize embedding space
     print("\n🌌 Visualizing embedding space...")

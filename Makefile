@@ -1,4 +1,4 @@
-.PHONY: help test test-cov up-api up-mcp up-both down status clean clean-rag install verify examples example-main example-client
+.PHONY: help test up-api up-mcp up-both down status clean clean-rag clean-images clean-output install verify examples example-main example-client demo demo-simple demo-full demo-multi
 
 # Default target
 help:
@@ -8,8 +8,7 @@ help:
 	@echo "Development:"
 	@echo "  make install     - Install dependencies with uv"
 	@echo "  make verify      - Run verification script"
-	@echo "  make test        - Run tests"
-	@echo "  make test-cov    - Run tests with coverage report"
+	@echo "  make test        - Run tests with coverage report"
 	@echo ""
 	@echo "Services (detached mode):"
 	@echo "  make up-api      - Start FastAPI service in background"
@@ -23,9 +22,17 @@ help:
 	@echo "  make example-main   - Run main demo script"
 	@echo "  make example-client - Run client demo (requires service)"
 	@echo ""
+	@echo "Demonstrations:"
+	@echo "  make demo           - List available demonstrations"
+	@echo "  make demo-simple    - Run simple visualization demo (fast, 50 images)"
+	@echo "  make demo-full      - Run full visualization demo (1000 images)"
+	@echo "  make demo-multi     - Run multi-dataset demonstration"
+	@echo ""
 	@echo "Cleanup:"
-	@echo "  make clean       - Remove cache and temporary files"
-	@echo "  make clean-rag   - Remove RAG database directories"
+	@echo "  make clean         - Remove cache and temporary files"
+	@echo "  make clean-rag     - Remove RAG database directories"
+	@echo "  make clean-images  - Remove image store directories"
+	@echo "  make clean-output  - Remove visualization output directories"
 
 # Installation
 install:
@@ -37,9 +44,6 @@ verify:
 
 # Testing
 test:
-	uv run pytest tests/
-
-test-cov:
 	uv run pytest tests/ --cov=vision_rag --cov-report=term-missing
 
 # Service management (detached mode)
@@ -145,6 +149,11 @@ status:
 	else \
 		echo "Both:     ✗ Not running"; \
 	fi
+	@echo ""
+	@echo "Environment:"
+	@echo "============"
+	@echo "Python:   $$(python --version 2>&1 | cut -d' ' -f2)"
+	@echo "uv:       $$(uv --version 2>&1 | cut -d' ' -f2)"
 
 # Examples
 examples:
@@ -183,6 +192,45 @@ example-client:
 		python examples/client_demo.py; \
 	fi
 
+# Demonstrations
+demo:
+	@echo "Available Demonstrations"
+	@echo "======================="
+	@echo ""
+	@echo "Simple Visualization Demo (fast, 50 images):"
+	@echo "   make demo-simple"
+	@echo "   - Quick demonstration of core functionality"
+	@echo "   - Creates 5 visualization files in output/simple_visualizations/"
+	@echo "   - Perfect for understanding basic concepts"
+	@echo ""
+	@echo "Full Visualization Demo (1000 images):"
+	@echo "   make demo-full"
+	@echo "   - Comprehensive demonstration with full analysis"
+	@echo "   - Creates 9 visualization files in output/visualizations/"
+	@echo "   - Includes embedding space analysis (t-SNE)"
+	@echo "   - Shows multiple search scenarios"
+	@echo ""
+	@echo "Multi-Dataset Demo:"
+	@echo "   make demo-multi"
+	@echo "   - Demonstrates using multiple MedMNIST datasets"
+	@echo "   - Compares PathMNIST and ChestMNIST"
+	@echo "   - Shows dataset configuration usage"
+
+demo-simple:
+	@echo "Running simple visualization demo..."
+	@echo "This will create visualizations in demonstrations/output/simple_visualizations/"
+	cd demonstrations && uv run python simple_visualization_example.py
+
+demo-full:
+	@echo "Running full visualization demo..."
+	@echo "This will create visualizations in demonstrations/output/visualizations/"
+	@echo "⚠️  This demo uses 1000 images and may take a few minutes..."
+	cd demonstrations && uv run python demo_with_visualization.py
+
+demo-multi:
+	@echo "Running multi-dataset demonstration..."
+	cd demonstrations && uv run python multi_dataset_demo.py
+
 # Cleanup
 clean:
 	@echo "Cleaning up..."
@@ -211,4 +259,34 @@ clean-rag:
 		echo "✓ Removed demonstrations/chroma_db_* directories"; \
 	else \
 		echo "✓ No demonstrations/chroma_db_* directories found"; \
+	fi
+
+clean-images:
+	@echo "Removing image store directories..."
+	@if ls image_store_* > /dev/null 2>&1; then \
+		rm -rf image_store_*; \
+		echo "✓ Removed all image_store_* directories"; \
+	else \
+		echo "✓ No image_store_* directories found"; \
+	fi
+	@if ls demonstrations/image_store_* > /dev/null 2>&1; then \
+		rm -rf demonstrations/image_store_*; \
+		echo "✓ Removed demonstrations/image_store_* directories"; \
+	else \
+		echo "✓ No demonstrations/image_store_* directories found"; \
+	fi
+
+clean-output:
+	@echo "Removing visualization output directories..."
+	@if [ -d output ]; then \
+		rm -rf output; \
+		echo "✓ Removed output/ directory"; \
+	else \
+		echo "✓ No output/ directory found"; \
+	fi
+	@if [ -d demonstrations/output ]; then \
+		rm -rf demonstrations/output; \
+		echo "✓ Removed demonstrations/output/ directory"; \
+	else \
+		echo "✓ No demonstrations/output/ directory found"; \
 	fi

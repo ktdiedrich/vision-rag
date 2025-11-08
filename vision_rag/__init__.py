@@ -20,6 +20,7 @@ from .data_loader import (
 )
 from .encoder import CLIPImageEncoder
 from .rag_store import ChromaRAGStore
+from .image_store import ImageFileStore
 from .search import ImageSearcher
 from .utils import decode_base64_image, encode_image_to_base64
 from .visualization import RAGVisualizer
@@ -45,6 +46,7 @@ __all__ = [
     # Core components
     "CLIPImageEncoder",
     "ChromaRAGStore",
+    "ImageFileStore",
     "ImageSearcher",
     "decode_base64_image",
     "encode_image_to_base64",

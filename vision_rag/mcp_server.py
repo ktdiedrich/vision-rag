@@ -3,14 +3,13 @@
 import asyncio
 from typing import Any, Dict, List, Optional
 
-from PIL import Image
-
 from .config import CLIP_MODEL_NAME, MEDMNIST_DATASET
 from .encoder import CLIPImageEncoder
 from .rag_store import ChromaRAGStore
 from .search import ImageSearcher
 from .data_loader import get_human_readable_label
 from .utils import decode_base64_image
+from .image_store import ImageFileStore
 
 
 class VisionRAGMCPServer:
@@ -18,22 +17,26 @@ class VisionRAGMCPServer:
     
     def __init__(
         self,
-        encoder_model: str = "clip-ViT-B-32",
+        encoder_model: str = CLIP_MODEL_NAME,
         collection_name: str = "mcp_vision_rag",
         persist_directory: str = "./chroma_db_mcp",
+        image_store_dir: str = "./image_store_mcp",
     ):
         """
         Initialize MCP server.
         
         Args:
+            encoder_model: CLIP model name
             collection_name: ChromaDB collection name
             persist_directory: Directory for persistent storage
+            image_store_dir: Directory for image file storage
         """
-        self.encoder = CLIPImageEncoder(model_name=CLIP_MODEL_NAME)
+        self.encoder = CLIPImageEncoder(model_name=encoder_model)
         self.rag_store = ChromaRAGStore(
             collection_name=collection_name,
             persist_directory=persist_directory,
         )
+        self.image_store = ImageFileStore(storage_dir=image_store_dir)
         self.searcher = ImageSearcher(encoder=self.encoder, rag_store=self.rag_store)
         
         # MCP protocol handlers
@@ -158,6 +161,9 @@ class VisionRAGMCPServer:
         # Decode image
         image = decode_base64_image(image_base64)
         
+        # Save image to disk
+        image_path = self.image_store.save_image(image)
+        
         # Encode image
         embedding = self.encoder.encode_image(image)
         
@@ -165,9 +171,11 @@ class VisionRAGMCPServer:
         current_count = self.rag_store.count()
         image_id = f"img_{current_count}"
         
-        # Prepare metadata
+        # Prepare metadata with image path
         if metadata is None:
-            metadata = {"index": current_count}
+            metadata = {}
+        metadata["image_path"] = image_path
+        metadata["index"] = current_count
         
         # Add to store
         self.rag_store.add_embeddings(
@@ -179,6 +187,7 @@ class VisionRAGMCPServer:
         return {
             "id": image_id,
             "metadata": metadata,
+            "image_path": image_path,
             "total_embeddings": self.rag_store.count(),
         }
     
@@ -191,8 +200,10 @@ class VisionRAGMCPServer:
         """
         return {
             "total_embeddings": self.rag_store.count(),
+            "total_images": self.image_store.count(),
             "collection_name": self.rag_store.collection_name,
             "persist_directory": self.rag_store.persist_directory,
+            "image_store_directory": str(self.image_store.storage_dir),
             "encoder_model": CLIP_MODEL_NAME,
             "embedding_dimension": self.encoder.embedding_dimension,
         }

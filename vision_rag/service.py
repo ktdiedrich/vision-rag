@@ -2,6 +2,7 @@
 
 from typing import List, Optional, Dict, Any
 import io
+import threading
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException, UploadFile, File
@@ -14,6 +15,7 @@ from .rag_store import ChromaRAGStore
 from .search import ImageSearcher
 from .data_loader import get_human_readable_label
 from .utils import decode_base64_image
+from .image_store import ImageFileStore
 
 
 # Pydantic models for API requests/responses
@@ -61,20 +63,26 @@ class HealthResponse(BaseModel):
 class StatsResponse(BaseModel):
     """Statistics response."""
     total_embeddings: int
+    total_images: int
     collection_name: str
     persist_directory: str
+    image_store_directory: str
 
 
 # Global state (initialized on startup)
 encoder: Optional[CLIPImageEncoder] = None
 rag_store: Optional[ChromaRAGStore] = None
 searcher: Optional[ImageSearcher] = None
+image_store: Optional[ImageFileStore] = None
+
+# Thread lock for safe ID generation
+_id_generation_lock = threading.Lock()
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Manage application lifespan - startup and shutdown."""
-    global encoder, rag_store, searcher
+    global encoder, rag_store, searcher, image_store
     
     # Startup
     print("🚀 Initializing Vision RAG Service...")
@@ -89,6 +97,10 @@ async def lifespan(app: FastAPI):
         persist_directory=PERSIST_DIRECTORY,
     )
     print(f"✅ Connected to ChromaDB ({rag_store.count()} embeddings)")
+    
+    # Initialize image store
+    image_store = ImageFileStore(storage_dir="./image_store_api")
+    print(f"✅ Image store ready ({image_store.count()} images)")
     
     # Initialize searcher
     searcher = ImageSearcher(encoder=encoder, rag_store=rag_store)
@@ -139,13 +151,15 @@ async def health_check():
 @app.get("/stats", response_model=StatsResponse)
 async def get_stats():
     """Get service statistics."""
-    if rag_store is None:
+    if rag_store is None or image_store is None:
         raise HTTPException(status_code=503, detail="Service not initialized")
     
     return StatsResponse(
         total_embeddings=rag_store.count(),
+        total_images=image_store.count(),
         collection_name=rag_store.collection_name,
         persist_directory=rag_store.persist_directory,
+        image_store_directory=str(image_store.storage_dir),
     )
 
 
@@ -263,31 +277,42 @@ async def add_image(request: AddImageRequest):
     Returns:
         Status and assigned ID
     """
-    if encoder is None or rag_store is None:
+    if encoder is None or rag_store is None or image_store is None:
         raise HTTPException(status_code=503, detail="Service not initialized")
     
     try:
         # Decode base64 image
         image = decode_base64_image(request.image_base64)
         
+        # Save image to disk
+        image_path = image_store.save_image(image)
+        
         # Encode image
         embedding = encoder.encode_image(image)
         
-        # Generate ID
-        current_count = rag_store.count()
-        image_id = f"img_{current_count}"
-        
-        # Add to store
-        rag_store.add_embeddings(
-            embeddings=embedding.reshape(1, -1),
-            ids=[image_id],
-            metadatas=[request.metadata if request.metadata else {"index": current_count}],
-        )
+        # Use lock to ensure atomic ID generation and storage
+        with _id_generation_lock:
+            # Generate ID
+            current_count = rag_store.count()
+            image_id = f"img_{current_count}"
+            
+            # Prepare metadata with image path
+            metadata = request.metadata.copy() if request.metadata else {}
+            metadata["image_path"] = image_path
+            metadata["index"] = current_count
+            
+            # Add to store
+            rag_store.add_embeddings(
+                embeddings=embedding.reshape(1, -1),
+                ids=[image_id],
+                metadatas=[metadata],
+            )
         
         return {
             "status": "success",
             "id": image_id,
-            "metadata": request.metadata,
+            "metadata": metadata,
+            "image_path": image_path,
             "total_embeddings": rag_store.count(),
         }
         
@@ -306,32 +331,43 @@ async def add_images_batch(files: List[UploadFile] = File(...)):
     Returns:
         Status and assigned IDs
     """
-    if encoder is None or rag_store is None:
+    if encoder is None or rag_store is None or image_store is None:
         raise HTTPException(status_code=503, detail="Service not initialized")
     
     try:
         images = []
+        image_paths = []
+        
         for file in files:
             image_bytes = await file.read()
             image = Image.open(io.BytesIO(image_bytes))
             images.append(image)
+            
+            # Save each image to disk
+            image_path = image_store.save_image(image)
+            image_paths.append(image_path)
         
         # Encode all images
         embeddings = encoder.encode_images(images)
         
-        # Generate IDs
-        current_count = rag_store.count()
-        ids = [f"img_{current_count + i}" for i in range(len(images))]
-        
-        # Create metadata
-        metadatas = [{"index": current_count + i} for i in range(len(images))]
-        
-        # Add to store
-        rag_store.add_embeddings(
-            embeddings=embeddings,
-            ids=ids,
-            metadatas=metadatas,
-        )
+        # Use lock to ensure atomic ID generation and storage
+        with _id_generation_lock:
+            # Generate IDs
+            current_count = rag_store.count()
+            ids = [f"img_{current_count + i}" for i in range(len(images))]
+            
+            # Create metadata with image paths
+            metadatas = [
+                {"index": current_count + i, "image_path": image_paths[i]}
+                for i in range(len(images))
+            ]
+            
+            # Add to store
+            rag_store.add_embeddings(
+                embeddings=embeddings,
+                ids=ids,
+                metadatas=metadatas,
+            )
         
         return {
             "status": "success",

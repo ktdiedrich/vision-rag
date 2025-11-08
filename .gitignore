@@ -209,9 +209,8 @@ __marimo__/
 # Vision-RAG specific
 data/
 chroma_db*/
-visualizations/
-demonstrations/visualizations/
-demonstrations/simple_visualizations/
+image_store*/
+output/
 *.npz
 scratch.txt
 

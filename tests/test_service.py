@@ -404,7 +404,7 @@ class TestErrorHandling:
         """Test handling of malformed JSON requests."""
         response = client.post(
             "/search",
-            data="not valid json",
+            content="not valid json",
             headers={"Content-Type": "application/json"}
         )
         assert response.status_code == 422
@@ -418,3 +418,50 @@ class TestErrorHandling:
         # Missing label field
         response = client.post("/search/label", json={"n_results": 5})
         assert response.status_code == 422
+
+
+class TestConcurrency:
+    """Test concurrent operations to ensure thread safety."""
+    
+    def test_concurrent_image_additions(self, client):
+        """Test that concurrent image additions produce unique IDs."""
+        import concurrent.futures
+        
+        # Clear database first
+        client.delete("/clear")
+        
+        def add_image_task(index):
+            """Task to add an image."""
+            img_array = np.random.randint(0, 255, size=(28, 28), dtype=np.uint8)
+            img = Image.fromarray(img_array, mode='L')
+            
+            add_request = {
+                "image_base64": encode_image_to_base64(img),
+                "metadata": {"task_index": index}
+            }
+            
+            response = client.post("/add", json=add_request)
+            return response.json()
+        
+        # Add 10 images concurrently
+        num_images = 10
+        with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+            futures = [executor.submit(add_image_task, i) for i in range(num_images)]
+            results = [f.result() for f in concurrent.futures.as_completed(futures)]
+        
+        # Verify all additions were successful
+        assert len(results) == num_images
+        for result in results:
+            assert result["status"] == "success"
+            assert "id" in result
+        
+        # Verify all IDs are unique
+        ids = [result["id"] for result in results]
+        assert len(ids) == len(set(ids)), f"Duplicate IDs found: {ids}"
+        
+        # Verify final count matches number of images added
+        stats = client.get("/stats").json()
+        assert stats["total_embeddings"] == num_images
+        
+        # Clean up
+        client.delete("/clear")
