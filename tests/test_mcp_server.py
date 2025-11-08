@@ -813,7 +813,7 @@ class TestConcurrentOperations:
     @pytest.mark.asyncio
     async def test_concurrent_searches(self, server_with_data):
         """Test multiple concurrent searches."""
-        import asyncio
+        
         
         async def search_test():
             img_array = np.random.randint(0, 255, size=(28, 28), dtype=np.uint8)
