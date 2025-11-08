@@ -158,8 +158,12 @@ class VisionRAGMCPServer:
                 if "image_path" in metadata:
                     image_path = Path(metadata["image_path"])
                     if image_path.exists():
-                        img = Image.open(image_path)
-                        images.append(encode_image_to_base64(img))
+                        try:
+                            img = Image.open(image_path)
+                            images.append(encode_image_to_base64(img))
+                        except Exception:
+                            # Handle corrupted or unopenable images
+                            images.append(None)
                     else:
                         images.append(None)
                 else:
