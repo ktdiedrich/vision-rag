@@ -21,12 +21,21 @@ import base64
 import io
 from pathlib import Path
 from PIL import Image
+import numpy as np
 
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
+
+# Import MedMNIST
+try:
+    import medmnist
+    from medmnist import INFO
+except ImportError:
+    print("Error: medmnist package not found. Install with: pip install medmnist")
+    sys.exit(1)
 
 
 async def main():
@@ -110,16 +119,52 @@ async def main():
                             print(f"   ℹ️  No images found with label {result['label']}")
                     else:
                         print(f"   ❌ Error: {search_data.get('error')}")
-                print()                # 5. Add a sample image first (so we have data to search)
-                print("5️⃣  Adding a sample medical image...")
-                # Create a simple test image (28x28 grayscale)
-                test_image = Image.new('L', (28, 28), color=128)
-                # Add some variation to make it more realistic
-                import random
-                pixels = test_image.load()
-                for i in range(28):
-                    for j in range(28):
-                        pixels[i, j] = random.randint(100, 200)
+                print()
+                
+                # 5. Load real medical images from OrganCMNIST
+                print("5️⃣  Loading OrganCMNIST dataset (224x224)...")
+                
+                # Download and load OrganCMNIST
+                DataClass = getattr(medmnist, 'OrganCMNIST')
+                dataset = DataClass(split='train', download=True, size=224, root='./data')
+                
+                # Get a few sample images (heart images - label 3)
+                print(f"   Dataset loaded: {len(dataset)} images")
+                print(f"   Looking for heart images (label=3)...")
+                
+                # Find heart images
+                heart_images = []
+                for idx in range(min(100, len(dataset))):  # Check first 100 images
+                    img, label = dataset[idx]
+                    if label == 3:  # heart
+                        heart_images.append((img, idx))
+                        if len(heart_images) >= 3:
+                            break
+                
+                if not heart_images:
+                    print(f"   ⚠️  No heart images found in first 100 samples")
+                    print(f"   Using first available image instead")
+                    img, label = dataset[0]
+                    heart_images = [(img, 0)]
+                    label_name = "other"
+                else:
+                    print(f"   Found {len(heart_images)} heart images")
+                    label_name = "heart"
+                
+                # Add the first heart image
+                img_array, img_idx = heart_images[0]
+                
+                # Convert numpy array to PIL Image
+                # MedMNIST returns images as numpy arrays with shape (H, W, C) or (H, W)
+                if isinstance(img_array, np.ndarray):
+                    if img_array.ndim == 3 and img_array.shape[2] == 1:
+                        # Remove channel dimension if grayscale
+                        img_array = img_array.squeeze(axis=2)
+                    test_image = Image.fromarray(img_array.astype(np.uint8), mode='L')
+                else:
+                    test_image = img_array
+                
+                print(f"   Adding image {img_idx} (label={label_name}, size={test_image.size})...")
                 
                 # Encode to base64
                 buffer = io.BytesIO()
@@ -130,8 +175,9 @@ async def main():
                     "image_base64": test_image_b64,
                     "metadata": {
                         "label": 3,  # heart
-                        "source": "mcp_client_example",
-                        "description": "Test heart image"
+                        "source": "OrganCMNIST",
+                        "description": f"OrganCMNIST image {img_idx}",
+                        "dataset_index": img_idx
                     }
                 })
                 add_data = json.loads(add_result.content[0].text)
