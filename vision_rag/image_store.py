@@ -62,7 +62,7 @@ class ImageFileStore:
             prefix: Prefix for the filename (default: "img")
             
         Returns:
-            Relative path to the saved image
+            Full path (absolute or relative, depending on storage_dir) to the saved image as a string
         """
         # Convert numpy array to PIL Image if needed
         if isinstance(image, np.ndarray):
