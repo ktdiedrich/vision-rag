@@ -85,8 +85,9 @@ class ImageFileStore:
         filename = f"{prefix}_{image_id}.png"
         filepath = self.storage_dir / filename
         
-        # Save image
-        pil_image.save(filepath)
+        # If file exists, reuse the path; otherwise, save the image
+        if not filepath.exists():
+            pil_image.save(filepath)
         
         # Return relative path from storage directory
         return str(filepath)
