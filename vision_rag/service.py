@@ -16,6 +16,7 @@ from .search import ImageSearcher
 from .data_loader import get_human_readable_label
 from .utils import decode_base64_image
 from .image_store import ImageFileStore
+from .data_loader import get_medmnist_label_names
 
 
 # Pydantic models for API requests/responses
@@ -182,8 +183,6 @@ async def get_available_labels():
         Mapping of label IDs to human-readable names
     """
     try:
-        from .data_loader import get_medmnist_label_names
-        
         # Get label names for the configured dataset
         label_names = get_medmnist_label_names(dataset_name=MEDMNIST_DATASET)
         
