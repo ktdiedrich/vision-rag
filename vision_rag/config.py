@@ -13,11 +13,20 @@ PERSIST_DIRECTORY = os.getenv("VISION_RAG_PERSIST_DIR", "./chroma_db_api")
 # Default is 224 (CLIP's input size) for optimal quality
 # Set to None or empty string to disable resizing
 _image_size_str = os.getenv("VISION_RAG_IMAGE_SIZE", "224")
-IMAGE_SIZE = int(_image_size_str) if _image_size_str and _image_size_str.lower() != "none" else None
+try:
+    if _image_size_str and _image_size_str.lower() != "none":
+        IMAGE_SIZE = int(_image_size_str)
+    else:
+        IMAGE_SIZE = None
+except (ValueError, TypeError):
+    IMAGE_SIZE = 224
 # MedMNIST dataset download size - images are available in 28, 64, 128, or 224
 # Default is 224 to match CLIP's input size for best quality
 _medmnist_size_str = os.getenv("VISION_RAG_MEDMNIST_SIZE", "224")
-MEDMNIST_SIZE = int(_medmnist_size_str) if _medmnist_size_str else 224
+try:
+    MEDMNIST_SIZE = int(_medmnist_size_str)
+except (ValueError, TypeError):
+    MEDMNIST_SIZE = 224
 
 
 # Available MedMNIST datasets with their characteristics
