@@ -63,7 +63,7 @@ class TestImageFileStoreInitialization:
         store_path.mkdir()
         
         # Should not raise error
-        store = ImageFileStore(storage_dir=str(store_path))
+        ImageFileStore(storage_dir=str(store_path))
         assert store_path.exists()
 
 
