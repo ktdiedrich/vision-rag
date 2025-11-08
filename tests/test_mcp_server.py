@@ -340,6 +340,30 @@ class TestSearchByLabel:
         assert None in result["images_base64"]
     
     @pytest.mark.asyncio
+    async def test_search_by_label_return_images_corrupted(self, mcp_server, sample_image_base64, tmp_path):
+        """Test search by label with return_images when image file is corrupted."""
+        # Add image normally to get an entry in the database
+        image = Image.fromarray(np.random.randint(0, 255, size=(28, 28), dtype=np.uint8), mode='L')
+        embedding = mcp_server.encoder.encode_image(image)
+        
+        # Create a corrupted image file
+        corrupted_path = tmp_path / "corrupted_image.png"
+        corrupted_path.write_text("This is not a valid image file")
+        
+        # Add directly to rag_store with path to corrupted file
+        mcp_server.rag_store.add_embeddings(
+            embeddings=embedding.reshape(1, -1),
+            ids=["test_corrupted"],
+            metadatas=[{"label": 7, "image_path": str(corrupted_path)}]
+        )
+        
+        result = await mcp_server.search_by_label(label=7, return_images=True)
+        
+        assert "images_base64" in result
+        # Should have None for corrupted images
+        assert None in result["images_base64"]
+    
+    @pytest.mark.asyncio
     async def test_search_by_label_return_images_limit(self, server_with_data):
         """Test search by label with both return_images and n_results limit."""
         result = await server_with_data.search_by_label(label=0, n_results=1, return_images=True)
