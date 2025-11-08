@@ -31,7 +31,7 @@ def test_get_dataset_config_default():
     config = get_dataset_config()
     assert config["class_name"] == "OrganSMNIST"
     assert config["n_classes"] == 11
-    assert config["image_size"] == 28
+    assert config["image_size"] == 224
 
 
 def test_get_dataset_config_specific():
@@ -39,7 +39,7 @@ def test_get_dataset_config_specific():
     config = get_dataset_config("PathMNIST")
     assert config["class_name"] == "PathMNIST"
     assert config["n_classes"] == 9
-    assert config["image_size"] == 28
+    assert config["image_size"] == 224
     assert config["channels"] == 3
 
 
@@ -67,5 +67,5 @@ def test_available_datasets_structure():
         
         # Verify reasonable values
         assert config["n_classes"] > 0
-        assert config["image_size"] == 28  # All MedMNIST 2D datasets are 28x28
+        assert config["image_size"] == 224  # Default size for CLIP compatibility
         assert config["channels"] in [1, 3]  # Grayscale or RGB
