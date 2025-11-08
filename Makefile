@@ -153,6 +153,11 @@ status:
 	else \
 		echo "Both:     ✗ Not running"; \
 	fi
+	@echo ""
+	@echo "Environment:"
+	@echo "============"
+	@echo "Python:   $$(python --version 2>&1 | cut -d' ' -f2)"
+	@echo "uv:       $$(uv --version 2>&1 | cut -d' ' -f2)"
 
 # Examples
 examples:
