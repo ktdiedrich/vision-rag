@@ -2,6 +2,7 @@
 
 from typing import List, Optional, Dict, Any
 import io
+import threading
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException, UploadFile, File
@@ -73,6 +74,9 @@ encoder: Optional[CLIPImageEncoder] = None
 rag_store: Optional[ChromaRAGStore] = None
 searcher: Optional[ImageSearcher] = None
 image_store: Optional[ImageFileStore] = None
+
+# Thread lock for safe ID generation
+_id_generation_lock = threading.Lock()
 
 
 @asynccontextmanager
@@ -286,21 +290,23 @@ async def add_image(request: AddImageRequest):
         # Encode image
         embedding = encoder.encode_image(image)
         
-        # Generate ID
-        current_count = rag_store.count()
-        image_id = f"img_{current_count}"
-        
-        # Prepare metadata with image path
-        metadata = request.metadata.copy() if request.metadata else {}
-        metadata["image_path"] = image_path
-        metadata["index"] = current_count
-        
-        # Add to store
-        rag_store.add_embeddings(
-            embeddings=embedding.reshape(1, -1),
-            ids=[image_id],
-            metadatas=[metadata],
-        )
+        # Use lock to ensure atomic ID generation and storage
+        with _id_generation_lock:
+            # Generate ID
+            current_count = rag_store.count()
+            image_id = f"img_{current_count}"
+            
+            # Prepare metadata with image path
+            metadata = request.metadata.copy() if request.metadata else {}
+            metadata["image_path"] = image_path
+            metadata["index"] = current_count
+            
+            # Add to store
+            rag_store.add_embeddings(
+                embeddings=embedding.reshape(1, -1),
+                ids=[image_id],
+                metadatas=[metadata],
+            )
         
         return {
             "status": "success",
@@ -344,22 +350,24 @@ async def add_images_batch(files: List[UploadFile] = File(...)):
         # Encode all images
         embeddings = encoder.encode_images(images)
         
-        # Generate IDs
-        current_count = rag_store.count()
-        ids = [f"img_{current_count + i}" for i in range(len(images))]
-        
-        # Create metadata with image paths
-        metadatas = [
-            {"index": current_count + i, "image_path": image_paths[i]}
-            for i in range(len(images))
-        ]
-        
-        # Add to store
-        rag_store.add_embeddings(
-            embeddings=embeddings,
-            ids=ids,
-            metadatas=metadatas,
-        )
+        # Use lock to ensure atomic ID generation and storage
+        with _id_generation_lock:
+            # Generate IDs
+            current_count = rag_store.count()
+            ids = [f"img_{current_count + i}" for i in range(len(images))]
+            
+            # Create metadata with image paths
+            metadatas = [
+                {"index": current_count + i, "image_path": image_paths[i]}
+                for i in range(len(images))
+            ]
+            
+            # Add to store
+            rag_store.add_embeddings(
+                embeddings=embeddings,
+                ids=ids,
+                metadatas=metadatas,
+            )
         
         return {
             "status": "success",
