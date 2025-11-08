@@ -404,7 +404,7 @@ class TestErrorHandling:
         """Test handling of malformed JSON requests."""
         response = client.post(
             "/search",
-            data="not valid json",
+            content="not valid json",
             headers={"Content-Type": "application/json"}
         )
         assert response.status_code == 422
