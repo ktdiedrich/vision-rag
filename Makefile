@@ -1,4 +1,4 @@
-.PHONY: help test test-cov up-api up-mcp up-both down status clean clean-rag clean-images clean-output install verify examples example-main example-client demo demo-simple demo-full demo-multi
+.PHONY: help test up-api up-mcp up-both down status clean clean-rag clean-images clean-output install verify examples example-main example-client demo demo-simple demo-full demo-multi
 
 # Default target
 help:
@@ -8,8 +8,7 @@ help:
 	@echo "Development:"
 	@echo "  make install     - Install dependencies with uv"
 	@echo "  make verify      - Run verification script"
-	@echo "  make test        - Run tests"
-	@echo "  make test-cov    - Run tests with coverage report"
+	@echo "  make test        - Run tests with coverage report"
 	@echo ""
 	@echo "Services (detached mode):"
 	@echo "  make up-api      - Start FastAPI service in background"
@@ -45,9 +44,6 @@ verify:
 
 # Testing
 test:
-	uv run pytest tests/
-
-test-cov:
 	uv run pytest tests/ --cov=vision_rag --cov-report=term-missing
 
 # Service management (detached mode)
