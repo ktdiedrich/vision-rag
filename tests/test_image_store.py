@@ -51,7 +51,7 @@ class TestImageFileStoreInitialization:
     def test_init_creates_directory(self, temp_store_dir):
         """Test that initialization creates the storage directory."""
         store_path = Path(temp_store_dir) / "test_store"
-        store = ImageFileStore(storage_dir=str(store_path))
+        ImageFileStore(storage_dir=str(store_path))
         
         assert store_path.exists()
         assert store_path.is_dir()
