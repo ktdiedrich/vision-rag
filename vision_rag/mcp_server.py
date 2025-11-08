@@ -2,14 +2,16 @@
 
 import asyncio
 from typing import Any, Dict, List, Optional
+from pathlib import Path
 
 from .config import CLIP_MODEL_NAME, MEDMNIST_DATASET, IMAGE_SIZE
 from .encoder import CLIPImageEncoder
 from .rag_store import ChromaRAGStore
 from .search import ImageSearcher
 from .data_loader import get_human_readable_label
-from .utils import decode_base64_image
+from .utils import decode_base64_image, encode_image_to_base64
 from .image_store import ImageFileStore
+from PIL import Image
 
 
 class VisionRAGMCPServer:
@@ -126,6 +128,7 @@ class VisionRAGMCPServer:
         self,
         label: int,
         n_results: Optional[int] = None,
+        return_images: bool = False,
     ) -> Dict[str, Any]:
         """
         Search for images by label.
@@ -133,19 +136,37 @@ class VisionRAGMCPServer:
         Args:
             label: Label to search for
             n_results: Optional limit on results
+            return_images: If True, return base64 encoded images
             
         Returns:
-            Images with matching label
+            Images with matching label, optionally including base64 encoded image data
         """
         results = self.rag_store.search_by_label(label=label, n_results=n_results)
         
-        return {
+        response = {
             "label": label,
             "human_readable_label": get_human_readable_label(label, dataset_name=MEDMNIST_DATASET),
             "ids": results["ids"],
             "metadatas": results["metadatas"],
             "count": len(results["ids"]),
         }
+        
+        # Optionally load and encode images
+        if return_images:
+            images = []
+            for metadata in results["metadatas"]:
+                if "image_path" in metadata:
+                    image_path = Path(metadata["image_path"])
+                    if image_path.exists():
+                        img = Image.open(image_path)
+                        images.append(encode_image_to_base64(img))
+                    else:
+                        images.append(None)
+                else:
+                    images.append(None)
+            response["images_base64"] = images
+        
+        return response
     
     async def add_image(
         self,
@@ -266,6 +287,12 @@ class VisionRAGMCPServer:
                         "type": "integer",
                         "description": "Optional limit on number of results",
                         "required": False,
+                    },
+                    "return_images": {
+                        "type": "boolean",
+                        "description": "If True, return base64 encoded images (default: False)",
+                        "required": False,
+                        "default": False,
                     },
                 },
             },

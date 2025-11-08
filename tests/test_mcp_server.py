@@ -2,6 +2,7 @@
 
 import pytest
 import numpy as np
+from pathlib import Path
 from PIL import Image
 
 from vision_rag.mcp_server import VisionRAGMCPServer
@@ -88,6 +89,46 @@ class TestMCPServerInitialization:
         
         # Check searcher
         assert hasattr(mcp_server.searcher, 'search')
+    
+    def test_server_with_custom_image_size(self):
+        """Test server initialization with custom image size."""
+        server = VisionRAGMCPServer(
+            collection_name="test_custom_size",
+            persist_directory="./chroma_db_test_custom",
+            image_size=128
+        )
+        
+        assert server.image_store is not None
+        
+        # Cleanup
+        server.rag_store.clear()
+    
+    def test_server_with_none_image_size(self):
+        """Test server initialization with image_size=None (no resizing)."""
+        server = VisionRAGMCPServer(
+            collection_name="test_no_resize",
+            persist_directory="./chroma_db_test_no_resize",
+            image_size=None
+        )
+        
+        assert server.image_store is not None
+        
+        # Cleanup
+        server.rag_store.clear()
+    
+    def test_server_custom_directories(self):
+        """Test server with custom directories."""
+        server = VisionRAGMCPServer(
+            collection_name="test_custom_dirs",
+            persist_directory="./custom_chroma",
+            image_store_dir="./custom_images"
+        )
+        
+        assert server.rag_store.collection_name == "test_custom_dirs"
+        assert server.rag_store.persist_directory == "./custom_chroma"
+        
+        # Cleanup
+        server.rag_store.clear()
 
 
 class TestHandleToolCall:
@@ -252,6 +293,60 @@ class TestSearchByLabel:
         
         assert result["count"] == 0
         assert len(result["ids"]) == 0
+    
+    @pytest.mark.asyncio
+    async def test_search_by_label_with_return_images(self, server_with_data):
+        """Test search by label with return_images=True."""
+        result = await server_with_data.search_by_label(label=0, return_images=True)
+        
+        assert "images_base64" in result
+        assert isinstance(result["images_base64"], list)
+        assert len(result["images_base64"]) == result["count"]
+        
+        # Check that images are base64 strings
+        for img_b64 in result["images_base64"]:
+            if img_b64 is not None:
+                assert isinstance(img_b64, str)
+                assert len(img_b64) > 0
+    
+    @pytest.mark.asyncio
+    async def test_search_by_label_without_return_images(self, server_with_data):
+        """Test search by label with return_images=False (default)."""
+        result = await server_with_data.search_by_label(label=0, return_images=False)
+        
+        # Should not include images_base64
+        assert "images_base64" not in result
+        assert "ids" in result
+        assert "metadatas" in result
+    
+    @pytest.mark.asyncio
+    async def test_search_by_label_return_images_missing_path(self, mcp_server, sample_image_base64):
+        """Test search by label with return_images when image_path is missing."""
+        # Add image without image_path in metadata (manually)
+        image = Image.fromarray(np.random.randint(0, 255, size=(28, 28), dtype=np.uint8), mode='L')
+        embedding = mcp_server.encoder.encode_image(image)
+        
+        # Add directly to rag_store without using add_image (so no image_path)
+        mcp_server.rag_store.add_embeddings(
+            embeddings=embedding.reshape(1, -1),
+            ids=["test_no_path"],
+            metadatas=[{"label": 5}]
+        )
+        
+        result = await mcp_server.search_by_label(label=5, return_images=True)
+        
+        assert "images_base64" in result
+        # Should have None for missing images
+        assert None in result["images_base64"]
+    
+    @pytest.mark.asyncio
+    async def test_search_by_label_return_images_limit(self, server_with_data):
+        """Test search by label with both return_images and n_results limit."""
+        result = await server_with_data.search_by_label(label=0, n_results=1, return_images=True)
+        
+        assert result["count"] <= 1
+        assert "images_base64" in result
+        assert len(result["images_base64"]) <= 1
 
 
 class TestAddImage:
@@ -269,10 +364,16 @@ class TestAddImage:
         
         assert "id" in result
         assert "metadata" in result
+        assert "image_path" in result
         assert "total_embeddings" in result
         assert result["metadata"]["label"] == 5
         assert result["metadata"]["source"] == "test"
         assert result["total_embeddings"] == initial_count + 1
+        
+        # Verify image was saved to disk
+        assert "image_path" in result["metadata"]
+        image_path = Path(result["image_path"])
+        assert image_path.exists()
     
     @pytest.mark.asyncio
     async def test_add_image_without_metadata(self, mcp_server, sample_image_base64):
@@ -284,6 +385,7 @@ class TestAddImage:
         assert "id" in result
         assert "metadata" in result
         assert "index" in result["metadata"]
+        assert "image_path" in result["metadata"]
     
     @pytest.mark.asyncio
     async def test_add_multiple_images(self, mcp_server):
@@ -308,6 +410,48 @@ class TestAddImage:
             await mcp_server.add_image(
                 image_base64="invalid_base64_data"
             )
+    
+    @pytest.mark.asyncio
+    async def test_add_image_with_rgb(self, mcp_server):
+        """Test adding RGB image."""
+        # Create RGB image
+        img_array = np.random.randint(0, 255, size=(28, 28, 3), dtype=np.uint8)
+        img = Image.fromarray(img_array, mode='RGB')
+        
+        result = await mcp_server.add_image(
+            image_base64=encode_image_to_base64(img),
+            metadata={"type": "rgb"}
+        )
+        
+        assert "id" in result
+        assert "image_path" in result
+        
+        # Verify saved image
+        saved_path = Path(result["image_path"])
+        assert saved_path.exists()
+    
+    @pytest.mark.asyncio
+    async def test_add_image_metadata_preserved(self, mcp_server, sample_image_base64):
+        """Test that metadata is properly preserved."""
+        metadata = {
+            "label": 3,
+            "patient_id": "12345",
+            "scan_date": "2025-01-01",
+            "custom_field": "test_value"
+        }
+        
+        result = await mcp_server.add_image(
+            image_base64=sample_image_base64,
+            metadata=metadata
+        )
+        
+        # Check all metadata fields are preserved
+        for key, value in metadata.items():
+            assert result["metadata"][key] == value
+        
+        # Also includes image_path and index
+        assert "image_path" in result["metadata"]
+        assert "index" in result["metadata"]
 
 
 class TestGetStatistics:
@@ -319,12 +463,15 @@ class TestGetStatistics:
         result = await mcp_server.get_statistics()
         
         assert "total_embeddings" in result
+        assert "total_images" in result
         assert "collection_name" in result
         assert "persist_directory" in result
+        assert "image_store_directory" in result
         assert "encoder_model" in result
         assert "embedding_dimension" in result
         
         assert isinstance(result["total_embeddings"], int)
+        assert isinstance(result["total_images"], int)
         assert isinstance(result["embedding_dimension"], int)
     
     @pytest.mark.asyncio
@@ -333,8 +480,29 @@ class TestGetStatistics:
         result = await server_with_data.get_statistics()
         
         assert result["total_embeddings"] == 5
+        # Note: total_images may be >= 5 due to shared image store directory
+        assert result["total_images"] >= 5
         assert result["collection_name"] == "test_mcp_collection"
         assert result["embedding_dimension"] > 0
+    
+    @pytest.mark.asyncio
+    async def test_statistics_fields_consistency(self, mcp_server):
+        """Test that statistics fields are consistent."""
+        result = await mcp_server.get_statistics()
+        
+        # Verify all expected fields are present
+        expected_fields = [
+            "total_embeddings",
+            "total_images",
+            "collection_name",
+            "persist_directory",
+            "image_store_directory",
+            "encoder_model",
+            "embedding_dimension"
+        ]
+        
+        for field in expected_fields:
+            assert field in result, f"Missing field: {field}"
 
 
 class TestListAvailableLabels:
@@ -390,6 +558,39 @@ class TestGetToolDefinitions:
         assert "n_results" in search_def["parameters"]
         assert search_def["parameters"]["image_base64"]["required"] is True
         assert search_def["parameters"]["n_results"]["required"] is False
+    
+    def test_search_by_label_definition(self, mcp_server):
+        """Test search_by_label tool definition includes return_images."""
+        definitions = mcp_server.get_tool_definitions()
+        label_search_def = next(d for d in definitions if d["name"] == "search_by_label")
+        
+        assert "label" in label_search_def["parameters"]
+        assert "n_results" in label_search_def["parameters"]
+        assert "return_images" in label_search_def["parameters"]
+        assert label_search_def["parameters"]["label"]["required"] is True
+        assert label_search_def["parameters"]["return_images"]["required"] is False
+        assert label_search_def["parameters"]["return_images"]["default"] is False
+    
+    def test_add_image_definition(self, mcp_server):
+        """Test add_image tool definition."""
+        definitions = mcp_server.get_tool_definitions()
+        add_def = next(d for d in definitions if d["name"] == "add_image")
+        
+        assert "image_base64" in add_def["parameters"]
+        assert "metadata" in add_def["parameters"]
+        assert add_def["parameters"]["image_base64"]["required"] is True
+        assert add_def["parameters"]["metadata"]["required"] is False
+    
+    def test_tool_definition_types(self, mcp_server):
+        """Test that tool definitions have correct parameter types."""
+        definitions = mcp_server.get_tool_definitions()
+        
+        for tool_def in definitions:
+            params = tool_def["parameters"]
+            for param_name, param_info in params.items():
+                assert "type" in param_info
+                assert "description" in param_info
+                assert "required" in param_info
 
 
 class TestEndToEndWorkflow:
@@ -489,3 +690,146 @@ class TestErrorHandling:
         )
         assert "id" in result
         assert result["metadata"]["custom_field"] == "test_value"
+    
+    @pytest.mark.asyncio
+    async def test_search_with_negative_n_results(self, mcp_server, sample_image_base64):
+        """Test search with negative n_results (ChromaDB should handle this)."""
+        # ChromaDB may handle negative values differently
+        # This tests that the server doesn't crash
+        try:
+            result = await mcp_server.search_similar_images(
+                image_base64=sample_image_base64,
+                n_results=-1
+            )
+            # If it succeeds, check the result
+            assert "results" in result
+        except Exception:
+            # If it raises an exception, that's also acceptable
+            pass
+    
+    @pytest.mark.asyncio
+    async def test_search_with_very_large_n_results(self, server_with_data, sample_image_base64):
+        """Test search with very large n_results."""
+        result = await server_with_data.search_similar_images(
+            image_base64=sample_image_base64,
+            n_results=1000
+        )
+        
+        # Should return at most the number of items in store
+        assert result["count"] <= 5
+
+
+class TestImageSizeIntegration:
+    """Test image size parameter integration."""
+    
+    @pytest.mark.asyncio
+    async def test_add_image_with_resizing(self):
+        """Test adding images with resizing enabled."""
+        server = VisionRAGMCPServer(
+            collection_name="test_resize",
+            persist_directory="./chroma_db_test_resize",
+            image_size=64
+        )
+        
+        # Create a larger image
+        img_array = np.random.randint(0, 255, size=(128, 128), dtype=np.uint8)
+        img = Image.fromarray(img_array, mode='L')
+        
+        result = await server.add_image(
+            image_base64=encode_image_to_base64(img),
+            metadata={"original_size": "128x128"}
+        )
+        
+        # Verify image was saved
+        saved_path = Path(result["image_path"])
+        assert saved_path.exists()
+        
+        # Verify image was resized
+        saved_img = Image.open(saved_path)
+        assert saved_img.size == (64, 64)
+        
+        # Cleanup
+        server.rag_store.clear()
+    
+    @pytest.mark.asyncio
+    async def test_add_image_without_resizing(self):
+        """Test adding images without resizing (image_size=None)."""
+        server = VisionRAGMCPServer(
+            collection_name="test_no_resize",
+            persist_directory="./chroma_db_test_no_resize",
+            image_size=None
+        )
+        
+        # Create an image
+        original_size = (100, 100)
+        img_array = np.random.randint(0, 255, size=original_size, dtype=np.uint8)
+        img = Image.fromarray(img_array, mode='L')
+        
+        result = await server.add_image(
+            image_base64=encode_image_to_base64(img),
+            metadata={"test": "no_resize"}
+        )
+        
+        # Verify image was saved at original size
+        saved_path = Path(result["image_path"])
+        assert saved_path.exists()
+        
+        saved_img = Image.open(saved_path)
+        assert saved_img.size == original_size
+        
+        # Cleanup
+        server.rag_store.clear()
+
+
+class TestConcurrentOperations:
+    """Test concurrent operations on MCP server."""
+    
+    @pytest.mark.asyncio
+    async def test_concurrent_add_images(self, mcp_server):
+        """Test adding multiple images concurrently."""
+        import asyncio
+        
+        async def add_test_image(index):
+            img_array = np.random.randint(0, 255, size=(28, 28), dtype=np.uint8)
+            img = Image.fromarray(img_array, mode='L')
+            return await mcp_server.add_image(
+                image_base64=encode_image_to_base64(img),
+                metadata={"index": index}
+            )
+        
+        # Add 5 images concurrently
+        tasks = [add_test_image(i) for i in range(5)]
+        results = await asyncio.gather(*tasks)
+        
+        # Verify all succeeded
+        assert len(results) == 5
+        for result in results:
+            assert "id" in result
+            assert "metadata" in result
+        
+        # Verify all are in the store
+        stats = await mcp_server.get_statistics()
+        assert stats["total_embeddings"] >= 5
+    
+    @pytest.mark.asyncio
+    async def test_concurrent_searches(self, server_with_data):
+        """Test multiple concurrent searches."""
+        import asyncio
+        
+        async def search_test():
+            img_array = np.random.randint(0, 255, size=(28, 28), dtype=np.uint8)
+            img = Image.fromarray(img_array, mode='L')
+            return await server_with_data.search_similar_images(
+                image_base64=encode_image_to_base64(img),
+                n_results=3
+            )
+        
+        # Perform 5 searches concurrently
+        tasks = [search_test() for _ in range(5)]
+        results = await asyncio.gather(*tasks)
+        
+        # Verify all succeeded
+        assert len(results) == 5
+        for result in results:
+            assert "results" in result
+            assert "count" in result

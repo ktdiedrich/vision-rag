@@ -69,6 +69,13 @@ class StatsResponse(BaseModel):
     image_store_directory: str
 
 
+class LabelsResponse(BaseModel):
+    """Available labels response."""
+    labels: Dict[int, str] = Field(..., description="Mapping of label IDs to human-readable names")
+    count: int = Field(..., description="Total number of labels")
+    dataset: str = Field(..., description="Dataset name")
+
+
 # Global state (initialized on startup)
 encoder: Optional[CLIPImageEncoder] = None
 rag_store: Optional[ChromaRAGStore] = None
@@ -164,6 +171,32 @@ async def get_stats():
         persist_directory=rag_store.persist_directory,
         image_store_directory=str(image_store.storage_dir),
     )
+
+
+@app.get("/labels", response_model=LabelsResponse)
+async def get_available_labels():
+    """
+    Get all available labels from the dataset.
+    
+    Returns:
+        Mapping of label IDs to human-readable names
+    """
+    try:
+        from .data_loader import get_medmnist_label_names
+        
+        # Get label names for the configured dataset
+        label_names = get_medmnist_label_names(dataset_name=MEDMNIST_DATASET)
+        
+        return LabelsResponse(
+            labels=label_names,
+            count=len(label_names),
+            dataset=MEDMNIST_DATASET,
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to retrieve labels: {str(e)}"
+        )
 
 
 @app.post("/search", response_model=SearchResponse)
