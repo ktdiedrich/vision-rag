@@ -787,7 +787,6 @@ class TestConcurrentOperations:
     @pytest.mark.asyncio
     async def test_concurrent_add_images(self, mcp_server):
         """Test adding multiple images concurrently."""
-        import asyncio
         
         async def add_test_image(index):
             img_array = np.random.randint(0, 255, size=(28, 28), dtype=np.uint8)
