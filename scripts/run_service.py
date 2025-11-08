@@ -43,6 +43,11 @@ async def run_mcp_server():
 def run_both(api_host: str = "0.0.0.0", api_port: int = 8001):
     """Run both API and MCP server."""
     import multiprocessing
+    import sys
+    
+    print("=" * 60, file=sys.stderr)
+    print("🔬 Vision RAG Service - Both Modes", file=sys.stderr)
+    print("=" * 60, file=sys.stderr)
     
     # Start API in separate process
     api_process = multiprocessing.Process(
@@ -55,13 +60,15 @@ def run_both(api_host: str = "0.0.0.0", api_port: int = 8001):
     try:
         asyncio.run(run_mcp_server())
     except KeyboardInterrupt:
-        print("\n⚠️  Shutting down...")
+        print("\n⚠️  Shutting down...", file=sys.stderr)
         api_process.terminate()
         api_process.join()
 
 
 def main():
     """Main entry point."""
+    import sys
+    
     parser = argparse.ArgumentParser(description="Vision RAG Service Runner")
     parser.add_argument(
         "--mode",
@@ -83,9 +90,12 @@ def main():
     
     args = parser.parse_args()
     
-    print("=" * 60)
-    print("🔬 Vision RAG Service")
-    print("=" * 60)
+    # Only print to stderr for MCP mode to avoid interfering with JSON-RPC
+    output = sys.stderr if args.mode == "mcp" else sys.stdout
+    
+    print("=" * 60, file=output)
+    print("🔬 Vision RAG Service", file=output)
+    print("=" * 60, file=output)
     
     if args.mode == "api":
         run_api_service(host=args.host, port=args.port)

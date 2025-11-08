@@ -1,8 +1,13 @@
 """Model Context Protocol (MCP) server for vision RAG agent communication."""
 
 import asyncio
+import sys
 from typing import Any, Dict, List, Optional
 from pathlib import Path
+
+from mcp.server import Server
+from mcp.server.stdio import stdio_server
+from mcp.types import Tool, TextContent
 
 from .config import CLIP_MODEL_NAME, MEDMNIST_DATASET, IMAGE_SIZE
 from .encoder import CLIPImageEncoder
@@ -268,15 +273,14 @@ class VisionRAGMCPServer:
                     "image_base64": {
                         "type": "string",
                         "description": "Base64 encoded image to search for",
-                        "required": True,
                     },
                     "n_results": {
                         "type": "integer",
                         "description": "Number of similar images to return (default: 5)",
-                        "required": False,
                         "default": 5,
                     },
                 },
+                "required": ["image_base64"],
             },
             {
                 "name": "search_by_label",
@@ -285,20 +289,18 @@ class VisionRAGMCPServer:
                     "label": {
                         "type": "integer",
                         "description": "Organ label (0-10: bladder, femur-left, femur-right, heart, kidney-left, kidney-right, liver, lung-left, lung-right, pancreas, spleen)",
-                        "required": True,
                     },
                     "n_results": {
                         "type": "integer",
                         "description": "Optional limit on number of results",
-                        "required": False,
                     },
                     "return_images": {
                         "type": "boolean",
                         "description": "If True, return base64 encoded images (default: False)",
-                        "required": False,
                         "default": False,
                     },
                 },
+                "required": ["label"],
             },
             {
                 "name": "add_image",
@@ -307,45 +309,98 @@ class VisionRAGMCPServer:
                     "image_base64": {
                         "type": "string",
                         "description": "Base64 encoded image to add",
-                        "required": True,
                     },
                     "metadata": {
                         "type": "object",
                         "description": "Optional metadata (e.g., label, patient_id)",
-                        "required": False,
                     },
                 },
+                "required": ["image_base64"],
             },
             {
                 "name": "get_statistics",
                 "description": "Get statistics about the vision RAG store",
                 "parameters": {},
+                "required": [],
             },
             {
                 "name": "list_available_labels",
                 "description": "List all available organ labels with human-readable names",
                 "parameters": {},
+                "required": [],
             },
         ]
 
 
 async def main():
-    """Run MCP server."""
-    server = VisionRAGMCPServer()
+    """Run MCP server using stdio transport."""
+    # Create the MCP server instance
+    mcp_server = Server("vision-rag")
     
-    print("🤖 Vision RAG MCP Server Started")
-    print(f"📊 Total embeddings: {server.rag_store.count()}")
-    print(f"🔧 Available tools: {list(server.tools.keys())}")
-    print("\n📋 Tool Definitions:")
+    # Initialize Vision RAG components
+    vision_rag = VisionRAGMCPServer()
     
-    for tool in server.get_tool_definitions():
-        print(f"  - {tool['name']}: {tool['description']}")
+    print("🤖 Vision RAG MCP Server Starting...", file=sys.stderr)
+    print(f"📊 Total embeddings: {vision_rag.rag_store.count()}", file=sys.stderr)
+    print(f"🔧 Available tools: {list(vision_rag.tools.keys())}", file=sys.stderr)
     
-    print("\n✅ Server ready for agent communication")
+    # Register tools with MCP server
+    @mcp_server.list_tools()
+    async def list_tools() -> List[Tool]:
+        """List available tools."""
+        tools = []
+        for tool_def in vision_rag.get_tool_definitions():
+            # Convert our tool definitions to MCP Tool format with proper JSON Schema
+            input_schema = {
+                "type": "object",
+                "properties": tool_def["parameters"],
+            }
+            # Add required field if it exists
+            if "required" in tool_def and tool_def["required"]:
+                input_schema["required"] = tool_def["required"]
+            
+            tools.append(Tool(
+                name=tool_def["name"],
+                description=tool_def["description"],
+                inputSchema=input_schema
+            ))
+        return tools
     
-    # Keep server running
-    await asyncio.Event().wait()
-
+    @mcp_server.call_tool()
+    async def call_tool(name: str, arguments: dict) -> List[TextContent]:
+        """Execute a tool by name."""
+        try:
+            print(f"🔧 Calling tool: {name} with arguments: {arguments}", file=sys.stderr)
+            result = await vision_rag.handle_tool_call(name, arguments)
+            
+            import json
+            result_json = json.dumps(result, indent=2)
+            print(f"✅ Tool {name} completed successfully", file=sys.stderr)
+            return [TextContent(
+                type="text",
+                text=result_json
+            )]
+        except Exception as e:
+            print(f"❌ Error in tool {name}: {e}", file=sys.stderr)
+            import traceback
+            traceback.print_exc(file=sys.stderr)
+            raise
+    
+    print("✅ MCP Server ready for agent communication", file=sys.stderr)
+    
+    # Run the server with stdio transport
+    try:
+        async with stdio_server() as (read_stream, write_stream):
+            await mcp_server.run(
+                read_stream,
+                write_stream,
+                mcp_server.create_initialization_options()
+            )
+    except Exception as e:
+        print(f"❌ MCP Server error: {e}", file=sys.stderr)
+        import traceback
+        traceback.print_exc(file=sys.stderr)
+        raise
 
 if __name__ == "__main__":
     asyncio.run(main())

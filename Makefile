@@ -167,12 +167,18 @@ examples:
 	@echo "   - Stores in ChromaDB"
 	@echo "   - Performs similarity search"
 	@echo ""
-	@echo "2. Client Demo (requires service):"
+	@echo "2. Client Demo (requires FastAPI service):"
 	@echo "   make up-api          # Start service first"
 	@echo "   make example-client  # Then run client demo"
 	@echo "   - Tests FastAPI endpoints"
-	@echo "   - Tests MCP agent server"
 	@echo "   - Demonstrates service integration"
+	@echo ""
+	@echo "3. MCP Client Demo (MCP protocol):"
+	@echo "   make example-mcp     # Runs MCP client example"
+	@echo "   - Connects to MCP server via stdio"
+	@echo "   - Lists available tools"
+	@echo "   - Demonstrates all MCP operations"
+	@echo "   - Shows agent-to-agent communication"
 
 example-main:
 	@echo "Running main demo..."
@@ -191,6 +197,11 @@ example-client:
 		sleep 3; \
 		python examples/client_demo.py; \
 	fi
+
+example-mcp:
+	@echo "Running MCP client example..."
+	@echo "This will start an MCP server and demonstrate all tools"
+	python examples/mcp_client_example.py
 
 # Demonstrations
 demo:
