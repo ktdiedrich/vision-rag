@@ -29,7 +29,7 @@ export VISION_RAG_CLIP_MODEL="clip-ViT-L-14"
 
 # Configure storage (defaults shown)
 export VISION_RAG_COLLECTION_NAME="vision_rag"
-export VISION_RAG_PERSIST_DIR="./chroma_db_default"
+export VISION_RAG_PERSIST_DIR="./chroma_db_api"
 ```
 
 ### Available Datasets
