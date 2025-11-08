@@ -16,6 +16,7 @@ from .search import ImageSearcher
 from .data_loader import get_human_readable_label
 from .utils import decode_base64_image
 from .image_store import ImageFileStore
+from .data_loader import get_medmnist_label_names
 
 
 # Pydantic models for API requests/responses
@@ -67,6 +68,13 @@ class StatsResponse(BaseModel):
     collection_name: str
     persist_directory: str
     image_store_directory: str
+
+
+class LabelsResponse(BaseModel):
+    """Available labels response."""
+    labels: Dict[int, str] = Field(..., description="Mapping of label IDs to human-readable names")
+    count: int = Field(..., description="Total number of labels")
+    dataset: str = Field(..., description="Dataset name")
 
 
 # Global state (initialized on startup)
@@ -164,6 +172,35 @@ async def get_stats():
         persist_directory=rag_store.persist_directory,
         image_store_directory=str(image_store.storage_dir),
     )
+
+
+@app.get("/labels", response_model=LabelsResponse)
+async def get_available_labels():
+    """
+    Get all available labels from the dataset.
+    
+    Returns:
+        Mapping of label IDs to human-readable names
+    """
+    try:
+        # Get label names for the configured dataset
+        label_names = get_medmnist_label_names(dataset_name=MEDMNIST_DATASET)
+        
+        return LabelsResponse(
+            labels=label_names,
+            count=len(label_names),
+            dataset=MEDMNIST_DATASET,
+        )
+    except FileNotFoundError as e:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Dataset not found: {str(e)}"
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to retrieve labels: {str(e)}"
+        )
 
 
 @app.post("/search", response_model=SearchResponse)
