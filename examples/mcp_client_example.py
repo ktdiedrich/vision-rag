@@ -19,6 +19,7 @@ import sys
 import json
 import base64
 import io
+import traceback
 from pathlib import Path
 from PIL import Image
 import numpy as np
@@ -238,7 +239,6 @@ async def main():
             
     except Exception as e:
         print(f"\n❌ Error: {e}")
-        import traceback
         traceback.print_exc()
         sys.exit(1)
 
@@ -251,5 +251,4 @@ if __name__ == "__main__":
         sys.exit(0)
     except Exception as e:
         print(f"\n\n❌ Error: {e}")
-        import traceback
         traceback.print_exc()
