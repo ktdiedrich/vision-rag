@@ -66,8 +66,6 @@ def run_both(api_host: str = "0.0.0.0", api_port: int = 8001):
 
 def main():
     """Main entry point."""
-    import sys
-    
     parser = argparse.ArgumentParser(description="Vision RAG Service Runner")
     parser.add_argument(
         "--mode",
