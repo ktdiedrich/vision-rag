@@ -43,7 +43,6 @@ async def run_mcp_server():
 def run_both(api_host: str = "0.0.0.0", api_port: int = 8001):
     """Run both API and MCP server."""
     import multiprocessing
-    import sys
     
     print("=" * 60, file=sys.stderr)
     print("🔬 Vision RAG Service - Both Modes", file=sys.stderr)
