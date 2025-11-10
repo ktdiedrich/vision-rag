@@ -9,7 +9,7 @@ from PIL import Image
 from .config import MEDMNIST_DATASET, MEDMNIST_SIZE, get_dataset_config
 
 # Default permanent data directory
-DEFAULT_DATA_DIR = Path(__file__).parent.parent.parent / "data"
+DEFAULT_DATA_DIR = Path(__file__).parent.parent / "data"
 
 
 def download_medmnist(dataset_name: str = None, root: str = None, size: int = None) -> None:

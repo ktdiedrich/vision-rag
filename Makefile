@@ -44,7 +44,7 @@ verify:
 
 # Testing
 test:
-	uv run pytest tests/ --cov=vision_rag --cov-report=term-missing
+	uv run python -m pytest tests/ --cov=vision_rag --cov-report=term-missing
 
 # Service management (detached mode)
 up-api:
