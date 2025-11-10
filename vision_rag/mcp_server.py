@@ -1,6 +1,7 @@
 """Model Context Protocol (MCP) server for vision RAG agent communication."""
 
 import asyncio
+import json
 import sys
 from typing import Any, Dict, List, Optional
 from pathlib import Path
@@ -373,7 +374,6 @@ async def main():
             print(f"🔧 Calling tool: {name} with arguments: {arguments}", file=sys.stderr)
             result = await vision_rag.handle_tool_call(name, arguments)
             
-            import json
             result_json = json.dumps(result, indent=2)
             print(f"✅ Tool {name} completed successfully", file=sys.stderr)
             return [TextContent(
