@@ -1,5 +1,6 @@
 """Tests for MCP server module."""
 
+import asyncio
 import pytest
 import numpy as np
 from pathlib import Path
@@ -580,8 +581,9 @@ class TestGetToolDefinitions:
         
         assert "image_base64" in search_def["parameters"]
         assert "n_results" in search_def["parameters"]
-        assert search_def["parameters"]["image_base64"]["required"] is True
-        assert search_def["parameters"]["n_results"]["required"] is False
+        assert "required" in search_def
+        assert "image_base64" in search_def["required"]
+        assert "n_results" not in search_def["required"]
     
     def test_search_by_label_definition(self, mcp_server):
         """Test search_by_label tool definition includes return_images."""
@@ -591,8 +593,8 @@ class TestGetToolDefinitions:
         assert "label" in label_search_def["parameters"]
         assert "n_results" in label_search_def["parameters"]
         assert "return_images" in label_search_def["parameters"]
-        assert label_search_def["parameters"]["label"]["required"] is True
-        assert label_search_def["parameters"]["return_images"]["required"] is False
+        assert "required" in label_search_def
+        assert "label" in label_search_def["required"]
         assert label_search_def["parameters"]["return_images"]["default"] is False
     
     def test_add_image_definition(self, mcp_server):
@@ -602,8 +604,9 @@ class TestGetToolDefinitions:
         
         assert "image_base64" in add_def["parameters"]
         assert "metadata" in add_def["parameters"]
-        assert add_def["parameters"]["image_base64"]["required"] is True
-        assert add_def["parameters"]["metadata"]["required"] is False
+        assert "required" in add_def
+        assert "image_base64" in add_def["required"]
+        assert "metadata" not in add_def["required"]
     
     def test_tool_definition_types(self, mcp_server):
         """Test that tool definitions have correct parameter types."""
@@ -614,7 +617,8 @@ class TestGetToolDefinitions:
             for param_name, param_info in params.items():
                 assert "type" in param_info
                 assert "description" in param_info
-                assert "required" in param_info
+            # Check that required field exists at tool level
+            assert "required" in tool_def
 
 
 class TestEndToEndWorkflow:
