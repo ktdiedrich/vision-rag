@@ -32,7 +32,6 @@ from mcp.client.stdio import stdio_client
 # Import MedMNIST
 try:
     import medmnist
-    from medmnist import INFO
 except ImportError:
     print("Error: medmnist package not found. Install with: pip install medmnist")
     sys.exit(1)
