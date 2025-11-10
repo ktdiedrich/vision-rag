@@ -9,6 +9,7 @@ dependencies = [
     "fastapi>=0.115.0",
     "httpx>=0.27.0",
     "matplotlib>=3.9.0",
+    "mcp>=1.0.0",
     "medmnist>=3.0.2",
     "numpy>=2.3.4",
     "pandas>=2.2.0",

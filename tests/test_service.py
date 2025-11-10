@@ -138,7 +138,7 @@ class TestLabelsEndpoint:
     
     def test_get_labels_file_not_found(self, client, monkeypatch):
         """Test labels endpoint returns 404 when dataset file doesn't exist."""
-        from vision_rag import data_loader
+        from vision_rag import service
         
         def mock_get_medmnist_label_names(*args, **kwargs):
             raise FileNotFoundError(
@@ -147,7 +147,7 @@ class TestLabelsEndpoint:
                 "or load_medmnist_data('OrganSMNIST', size=224)."
             )
         
-        monkeypatch.setattr(data_loader, "get_medmnist_label_names", mock_get_medmnist_label_names)
+        monkeypatch.setattr(service, "get_medmnist_label_names", mock_get_medmnist_label_names)
         
         response = client.get("/labels")
         assert response.status_code == 404
@@ -159,12 +159,12 @@ class TestLabelsEndpoint:
     
     def test_get_labels_other_error(self, client, monkeypatch):
         """Test labels endpoint returns 500 for other errors."""
-        from vision_rag import data_loader
+        from vision_rag import service
         
         def mock_get_medmnist_label_names(*args, **kwargs):
             raise ValueError("Invalid dataset configuration")
         
-        monkeypatch.setattr(data_loader, "get_medmnist_label_names", mock_get_medmnist_label_names)
+        monkeypatch.setattr(service, "get_medmnist_label_names", mock_get_medmnist_label_names)
         
         response = client.get("/labels")
         assert response.status_code == 500
