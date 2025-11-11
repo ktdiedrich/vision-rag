@@ -1156,3 +1156,261 @@ class TestToolDefinitionsEdgeCases:
         
         assert "required" in search_def
         assert "image_base64" in search_def["required"]
+
+
+class TestMCPToolSchemaConversion:
+    """Test MCP Tool schema generation and conversion."""
+    
+    @pytest.mark.asyncio
+    async def test_tool_definition_to_mcp_schema(self, mcp_server):
+        """Test that tool definitions can be converted to MCP Tool schema."""
+        tool_defs = mcp_server.get_tool_definitions()
+        
+        # Simulate what main() does - convert to MCP Tool format
+        for tool_def in tool_defs:
+            input_schema = {
+                "type": "object",
+                "properties": tool_def["parameters"],
+            }
+            if "required" in tool_def and tool_def["required"]:
+                input_schema["required"] = tool_def["required"]
+            
+            # Verify schema structure
+            assert "type" in input_schema
+            assert input_schema["type"] == "object"
+            assert "properties" in input_schema
+    
+    @pytest.mark.asyncio
+    async def test_all_tools_have_valid_schemas(self, mcp_server):
+        """Test that all tool schemas are valid JSON Schema objects."""
+        tool_defs = mcp_server.get_tool_definitions()
+        
+        for tool_def in tool_defs:
+            assert "name" in tool_def
+            assert "description" in tool_def
+            assert "parameters" in tool_def
+            
+            # Parameters should be a dict
+            assert isinstance(tool_def["parameters"], dict)
+    
+    @pytest.mark.asyncio
+    async def test_get_statistics_empty_schema(self, mcp_server):
+        """Test that get_statistics has empty parameter schema."""
+        tool_defs = mcp_server.get_tool_definitions()
+        stats_def = next(td for td in tool_defs if td["name"] == "get_statistics")
+        
+        # Should have empty or no parameters
+        assert len(stats_def["parameters"]) == 0
+        assert stats_def["required"] == []
+    
+    @pytest.mark.asyncio
+    async def test_list_available_labels_empty_schema(self, mcp_server):
+        """Test that list_available_labels has empty parameter schema."""
+        tool_defs = mcp_server.get_tool_definitions()
+        labels_def = next(td for td in tool_defs if td["name"] == "list_available_labels")
+        
+        # Should have empty or no parameters
+        assert len(labels_def["parameters"]) == 0
+        assert labels_def["required"] == []
+
+
+class TestServerInitializationEdgeCases:
+    """Test edge cases in server initialization."""
+    
+    @pytest.mark.asyncio
+    async def test_server_with_default_parameters(self):
+        """Test server initialization with all default parameters."""
+        server = VisionRAGMCPServer()
+        
+        assert server.encoder is not None
+        assert server.rag_store is not None
+        assert server.image_store is not None
+        assert server.searcher is not None
+        assert len(server.tools) == 5
+    
+    @pytest.mark.asyncio
+    async def test_server_encoder_dimension_accessible(self, mcp_server):
+        """Test that encoder dimension is accessible."""
+        dim = mcp_server.encoder.embedding_dimension
+        assert isinstance(dim, int)
+        assert dim > 0
+    
+    @pytest.mark.asyncio
+    async def test_server_components_properly_connected(self, mcp_server):
+        """Test that server components are properly connected."""
+        # Searcher should use the same encoder and rag_store
+        assert mcp_server.searcher.encoder == mcp_server.encoder
+        assert mcp_server.searcher.rag_store == mcp_server.rag_store
+
+
+class TestSearchSimilarImagesEdgeCases:
+    """Additional edge cases for search_similar_images."""
+    
+    @pytest.mark.asyncio
+    async def test_search_returns_query_info_for_all_modes(self, mcp_server):
+        """Test that query_info is returned for different image modes."""
+        # Test grayscale
+        gray_img = Image.fromarray(np.random.randint(0, 255, (28, 28), dtype=np.uint8), mode='L')
+        result_gray = await mcp_server.search_similar_images(
+            image_base64=encode_image_to_base64(gray_img),
+            n_results=1
+        )
+        assert result_gray["query_info"]["image_mode"] == "L"
+        
+        # Test RGB
+        rgb_img = Image.fromarray(np.random.randint(0, 255, (28, 28, 3), dtype=np.uint8))
+        result_rgb = await mcp_server.search_similar_images(
+            image_base64=encode_image_to_base64(rgb_img),
+            n_results=1
+        )
+        assert result_rgb["query_info"]["image_mode"] == "RGB"
+    
+    @pytest.mark.asyncio
+    async def test_search_with_maximum_n_results(self, server_with_data):
+        """Test search with very large n_results doesn't break."""
+        img = Image.fromarray(np.random.randint(0, 255, (28, 28), dtype=np.uint8), mode='L')
+        
+        result = await server_with_data.search_similar_images(
+            image_base64=encode_image_to_base64(img),
+            n_results=1000
+        )
+        
+        # Should not crash, just return what's available
+        assert "results" in result
+        assert result["count"] <= 1000
+
+
+class TestAddImageEdgeCasesExtended:
+    """Extended edge cases for add_image functionality."""
+    
+    @pytest.mark.asyncio
+    async def test_add_image_returns_correct_index(self, mcp_server):
+        """Test that added images get correct index in metadata."""
+        initial_count = mcp_server.rag_store.count()
+        
+        img = Image.fromarray(np.random.randint(0, 255, (28, 28), dtype=np.uint8), mode='L')
+        result = await mcp_server.add_image(image_base64=encode_image_to_base64(img))
+        
+        assert result["metadata"]["index"] == initial_count
+    
+    @pytest.mark.asyncio
+    async def test_add_image_increments_total(self, mcp_server):
+        """Test that total_embeddings increments correctly."""
+        img = Image.fromarray(np.random.randint(0, 255, (28, 28), dtype=np.uint8), mode='L')
+        
+        result1 = await mcp_server.add_image(image_base64=encode_image_to_base64(img))
+        total1 = result1["total_embeddings"]
+        
+        result2 = await mcp_server.add_image(image_base64=encode_image_to_base64(img))
+        total2 = result2["total_embeddings"]
+        
+        assert total2 == total1 + 1
+    
+    @pytest.mark.asyncio
+    async def test_add_image_path_is_valid(self, mcp_server):
+        """Test that returned image path is valid and exists."""
+        img = Image.fromarray(np.random.randint(0, 255, (28, 28), dtype=np.uint8), mode='L')
+        
+        result = await mcp_server.add_image(image_base64=encode_image_to_base64(img))
+        
+        image_path = Path(result["image_path"])
+        assert image_path.exists()
+        assert image_path.is_file()
+
+
+class TestSearchByLabelExtended:
+    """Extended tests for search_by_label functionality."""
+    
+    @pytest.mark.asyncio
+    async def test_search_by_label_includes_human_readable(self, server_with_data):
+        """Test that search_by_label always includes human_readable_label."""
+        result = await server_with_data.search_by_label(label=0)
+        
+        assert "human_readable_label" in result
+        assert isinstance(result["human_readable_label"], str)
+        assert len(result["human_readable_label"]) > 0
+    
+    @pytest.mark.asyncio
+    async def test_search_by_label_metadatas_is_list(self, server_with_data):
+        """Test that metadatas is always a list."""
+        result = await server_with_data.search_by_label(label=0)
+        
+        assert "metadatas" in result
+        assert isinstance(result["metadatas"], list)
+    
+    @pytest.mark.asyncio
+    async def test_search_by_label_ids_is_list(self, server_with_data):
+        """Test that ids is always a list."""
+        result = await server_with_data.search_by_label(label=0)
+        
+        assert "ids" in result
+        assert isinstance(result["ids"], list)
+
+
+class TestListAvailableLabelsExtended:
+    """Extended tests for list_available_labels."""
+    
+    @pytest.mark.asyncio
+    async def test_list_labels_returns_all_organ_labels(self, mcp_server):
+        """Test that all 11 organ labels are returned."""
+        result = await mcp_server.list_available_labels()
+        
+        assert "labels" in result
+        assert "count" in result
+        assert result["count"] == 11  # OrganSMNIST has 11 labels
+    
+    @pytest.mark.asyncio
+    async def test_list_labels_has_all_keys(self, mcp_server):
+        """Test that all label keys 0-10 are present."""
+        result = await mcp_server.list_available_labels()
+        
+        labels_dict = result["labels"]
+        for i in range(11):
+            assert i in labels_dict or str(i) in labels_dict
+    
+    @pytest.mark.asyncio
+    async def test_list_labels_values_are_strings(self, mcp_server):
+        """Test that all label values are strings."""
+        result = await mcp_server.list_available_labels()
+        
+        labels_dict = result["labels"]
+        for value in labels_dict.values():
+            assert isinstance(value, str)
+            assert len(value) > 0
+
+
+class TestToolCallResultFormat:
+    """Test the format of tool call results."""
+    
+    @pytest.mark.asyncio
+    async def test_successful_tool_call_format(self, mcp_server):
+        """Test that successful tool calls have correct format."""
+        result = await mcp_server.handle_tool_call("get_statistics", {})
+        
+        assert "success" in result
+        assert result["success"] is True
+        assert "result" in result
+        assert "error" not in result or result.get("error") is None
+    
+    @pytest.mark.asyncio
+    async def test_failed_tool_call_format(self, mcp_server):
+        """Test that failed tool calls have correct format."""
+        result = await mcp_server.handle_tool_call(
+            "search_similar_images",
+            {"image_base64": "not_valid_base64"}
+        )
+        
+        assert "success" in result
+        assert result["success"] is False
+        assert "error" in result
+        assert isinstance(result["error"], str)
+    
+    @pytest.mark.asyncio
+    async def test_unknown_tool_format(self, mcp_server):
+        """Test that unknown tool calls have correct error format."""
+        result = await mcp_server.handle_tool_call("unknown_tool", {})
+        
+        assert "error" in result
+        assert "available_tools" in result
+        assert isinstance(result["available_tools"], list)
+        assert len(result["available_tools"]) == 5

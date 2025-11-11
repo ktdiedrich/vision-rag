@@ -4,6 +4,7 @@ import pytest
 import tempfile
 import shutil
 
+from conftest import network_required
 from vision_rag.data_loader import (
     download_medmnist,
     load_organmnist_data,
@@ -32,6 +33,7 @@ def temp_db_dir():
     shutil.rmtree(temp_dir)
 
 
+@network_required
 def test_end_to_end_pipeline(temp_data_dir, temp_db_dir):
     """Test the complete vision-RAG pipeline end-to-end."""
     
@@ -106,6 +108,7 @@ def test_end_to_end_pipeline(temp_data_dir, temp_db_dir):
         assert len(result["ids"]) <= 3
 
 
+@network_required
 def test_pipeline_with_same_image(temp_data_dir, temp_db_dir):
     """Test that searching with a training image returns itself as the top result."""
     
