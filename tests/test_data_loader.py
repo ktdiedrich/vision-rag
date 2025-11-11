@@ -7,6 +7,7 @@ import tempfile
 import shutil
 from pathlib import Path
 
+from conftest import network_required
 from vision_rag.data_loader import (
     download_medmnist,
     load_organmnist_data,
@@ -19,12 +20,6 @@ from vision_rag.data_loader import (
 
 # Use 28x28 size for faster test execution
 TEST_LOADER_SIZE = 28
-
-# Mark for tests that require network access
-network_required = pytest.mark.skipif(
-    True,  # Skip by default since Zenodo is unreliable
-    reason="Requires network access to Zenodo which may be unavailable"
-)
 
 
 @pytest.fixture
