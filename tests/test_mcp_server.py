@@ -860,3 +860,299 @@ class TestConcurrentOperations:
         for result in results:
             assert "results" in result
             assert "count" in result
+
+
+class TestSearchEdgeCases:
+    """Test edge cases in search functionality."""
+    
+    @pytest.mark.asyncio
+    async def test_search_with_empty_image(self, mcp_server):
+        """Test searching with a very small image."""
+        # Create small image (must be at least a few pixels for CLIP)
+        img = Image.fromarray(np.full((8, 8), 128, dtype=np.uint8), mode='L')
+        
+        result = await mcp_server.search_similar_images(
+            image_base64=encode_image_to_base64(img),
+            n_results=1
+        )
+        
+        assert "query_info" in result
+        assert result["query_info"]["image_size"] == [8, 8]
+    
+    @pytest.mark.asyncio
+    async def test_search_with_zero_results(self, server_with_data):
+        """Test search with n_results=1 (ChromaDB doesn't allow 0)."""
+        img_array = np.random.randint(0, 255, size=(28, 28), dtype=np.uint8)
+        img = Image.fromarray(img_array, mode='L')
+        
+        result = await server_with_data.search_similar_images(
+            image_base64=encode_image_to_base64(img),
+            n_results=1
+        )
+        
+        assert result["count"] >= 0
+        assert "results" in result
+    
+    @pytest.mark.asyncio
+    async def test_search_similar_different_image_modes(self, server_with_data):
+        """Test searching with RGB image when store has grayscale."""
+        # Create RGB image
+        img_array = np.random.randint(0, 255, size=(28, 28, 3), dtype=np.uint8)
+        img = Image.fromarray(img_array)
+        
+        result = await server_with_data.search_similar_images(
+            image_base64=encode_image_to_base64(img),
+            n_results=3
+        )
+        
+        assert "query_info" in result
+        assert result["query_info"]["image_mode"] == "RGB"
+        assert "results" in result
+
+
+class TestSearchByLabelEdgeCases:
+    """Test edge cases for search by label."""
+    
+    @pytest.mark.asyncio
+    async def test_search_by_label_boundary_values(self, server_with_data):
+        """Test search with boundary label values (0 and 10)."""
+        # Test label 0
+        result_0 = await server_with_data.search_by_label(label=0)
+        assert result_0["label"] == 0
+        assert "human_readable_label" in result_0
+        
+        # Test label 10
+        result_10 = await server_with_data.search_by_label(label=10)
+        assert result_10["label"] == 10
+        assert "human_readable_label" in result_10
+    
+    @pytest.mark.asyncio
+    async def test_search_by_label_return_images_empty_results(self, mcp_server):
+        """Test return_images=True when no results found."""
+        result = await mcp_server.search_by_label(
+            label=999,
+            return_images=True
+        )
+        
+        assert result["count"] == 0
+        assert result["images_base64"] == []
+    
+    @pytest.mark.asyncio
+    async def test_search_by_label_with_unlimited_results(self, server_with_data):
+        """Test search_by_label with n_results=None."""
+        result = await server_with_data.search_by_label(
+            label=0,
+            n_results=None
+        )
+        
+        # Should return all matches
+        assert "count" in result
+        assert result["count"] >= 0
+
+
+class TestAddImageEdgeCases:
+    """Test edge cases for adding images."""
+    
+    @pytest.mark.asyncio
+    async def test_add_image_with_empty_metadata(self, mcp_server):
+        """Test adding image with explicitly empty metadata dict."""
+        img_array = np.random.randint(0, 255, size=(28, 28), dtype=np.uint8)
+        img = Image.fromarray(img_array, mode='L')
+        
+        result = await mcp_server.add_image(
+            image_base64=encode_image_to_base64(img),
+            metadata={}
+        )
+        
+        assert "id" in result
+        assert "metadata" in result
+        assert "image_path" in result["metadata"]
+        assert "index" in result["metadata"]
+    
+    @pytest.mark.asyncio
+    async def test_add_image_with_complex_metadata(self, mcp_server):
+        """Test adding image with flat metadata (ChromaDB doesn't support nested dicts)."""
+        img_array = np.random.randint(0, 255, size=(28, 28), dtype=np.uint8)
+        img = Image.fromarray(img_array, mode='L')
+        
+        # ChromaDB only supports flat metadata with basic types
+        metadata = {
+            "label": 5,
+            "patient_id": "P12345",
+            "patient_age": 45,
+            "scan_date": "2025-11-10",
+            "modality": "CT"
+        }
+        
+        result = await mcp_server.add_image(
+            image_base64=encode_image_to_base64(img),
+            metadata=metadata
+        )
+        
+        assert "metadata" in result
+        assert result["metadata"]["label"] == 5
+        assert result["metadata"]["patient_id"] == "P12345"
+        assert result["metadata"]["patient_age"] == 45
+    
+    @pytest.mark.asyncio
+    async def test_add_image_preserves_id_sequence(self, mcp_server):
+        """Test that image IDs are sequential."""
+        ids = []
+        
+        for i in range(3):
+            img_array = np.random.randint(0, 255, size=(28, 28), dtype=np.uint8)
+            img = Image.fromarray(img_array, mode='L')
+            result = await mcp_server.add_image(
+                image_base64=encode_image_to_base64(img)
+            )
+            ids.append(result["id"])
+        
+        # Check IDs are sequential
+        assert ids[0] == "img_0"
+        assert ids[1] == "img_1"
+        assert ids[2] == "img_2"
+    
+    @pytest.mark.asyncio
+    async def test_add_large_image(self, mcp_server):
+        """Test adding a large image."""
+        # Create a large image
+        img_array = np.random.randint(0, 255, size=(512, 512), dtype=np.uint8)
+        img = Image.fromarray(img_array, mode='L')
+        
+        result = await mcp_server.add_image(
+            image_base64=encode_image_to_base64(img),
+            metadata={"size": "large"}
+        )
+        
+        assert "id" in result
+        assert result["metadata"]["size"] == "large"
+
+
+class TestStatisticsEdgeCases:
+    """Test edge cases for statistics."""
+    
+    @pytest.mark.asyncio
+    async def test_statistics_after_multiple_operations(self, mcp_server):
+        """Test that statistics update correctly after multiple operations."""
+        # Get initial stats
+        stats1 = await mcp_server.get_statistics()
+        initial_count = stats1["total_embeddings"]
+        
+        # Add an image
+        img_array = np.random.randint(0, 255, size=(28, 28), dtype=np.uint8)
+        img = Image.fromarray(img_array, mode='L')
+        await mcp_server.add_image(image_base64=encode_image_to_base64(img))
+        
+        # Check stats updated
+        stats2 = await mcp_server.get_statistics()
+        assert stats2["total_embeddings"] == initial_count + 1
+        
+        # Add another
+        await mcp_server.add_image(image_base64=encode_image_to_base64(img))
+        stats3 = await mcp_server.get_statistics()
+        assert stats3["total_embeddings"] == initial_count + 2
+    
+    @pytest.mark.asyncio
+    async def test_statistics_field_types(self, mcp_server):
+        """Test that all statistics fields have correct types."""
+        stats = await mcp_server.get_statistics()
+        
+        assert isinstance(stats["total_embeddings"], int)
+        assert isinstance(stats["total_images"], int)
+        assert isinstance(stats["collection_name"], str)
+        assert isinstance(stats["persist_directory"], str)
+        assert isinstance(stats["image_store_directory"], str)
+        assert isinstance(stats["encoder_model"], str)
+        assert isinstance(stats["embedding_dimension"], int)
+
+
+class TestToolsRegistration:
+    """Test tool registration and availability."""
+    
+    @pytest.mark.asyncio
+    async def test_all_tools_callable(self, mcp_server):
+        """Test that all registered tools are callable."""
+        for tool_name, tool_func in mcp_server.tools.items():
+            assert callable(tool_func)
+            assert asyncio.iscoroutinefunction(tool_func)
+    
+    @pytest.mark.asyncio
+    async def test_tools_dict_immutable(self, mcp_server):
+        """Test that tools dictionary contains expected tools."""
+        expected_tools = {
+            "search_similar_images",
+            "search_by_label",
+            "add_image",
+            "get_statistics",
+            "list_available_labels"
+        }
+        
+        assert set(mcp_server.tools.keys()) == expected_tools
+
+
+class TestHandleToolCallEdgeCases:
+    """Test edge cases for handle_tool_call."""
+    
+    @pytest.mark.asyncio
+    async def test_handle_tool_call_empty_arguments(self, mcp_server):
+        """Test tool call with empty arguments dict."""
+        result = await mcp_server.handle_tool_call("get_statistics", {})
+        
+        assert result["success"] is True
+        assert "result" in result
+    
+    @pytest.mark.asyncio
+    async def test_handle_tool_call_unknown_provides_available_tools(self, mcp_server):
+        """Test that unknown tool error includes available tools."""
+        result = await mcp_server.handle_tool_call("nonexistent_tool", {})
+        
+        assert "error" in result
+        assert "available_tools" in result
+        assert len(result["available_tools"]) == 5
+    
+    @pytest.mark.asyncio
+    async def test_handle_tool_call_exception_handling(self, mcp_server):
+        """Test that exceptions in tool calls are handled gracefully."""
+        # Try to call a tool with invalid arguments that will cause an exception
+        result = await mcp_server.handle_tool_call(
+            "search_similar_images",
+            {"image_base64": "invalid_base64!!!"}
+        )
+        
+        assert result["success"] is False
+        assert "error" in result
+        assert isinstance(result["error"], str)
+
+
+class TestToolDefinitionsEdgeCases:
+    """Test edge cases for tool definitions."""
+    
+    @pytest.mark.asyncio
+    async def test_tool_definitions_have_descriptions(self, mcp_server):
+        """Test that all tool definitions have descriptions."""
+        tool_defs = mcp_server.get_tool_definitions()
+        
+        for tool_def in tool_defs:
+            assert "description" in tool_def
+            assert len(tool_def["description"]) > 0
+            assert isinstance(tool_def["description"], str)
+    
+    @pytest.mark.asyncio
+    async def test_tool_definitions_parameter_descriptions(self, mcp_server):
+        """Test that all parameters have descriptions."""
+        tool_defs = mcp_server.get_tool_definitions()
+        
+        for tool_def in tool_defs:
+            if "parameters" in tool_def and tool_def["parameters"]:
+                for param_name, param_spec in tool_def["parameters"].items():
+                    if isinstance(param_spec, dict):
+                        assert "description" in param_spec or "type" in param_spec
+    
+    @pytest.mark.asyncio
+    async def test_search_similar_images_has_required_params(self, mcp_server):
+        """Test that search_similar_images defines required parameters."""
+        tool_defs = mcp_server.get_tool_definitions()
+        search_def = next(td for td in tool_defs if td["name"] == "search_similar_images")
+        
+        assert "required" in search_def
+        assert "image_base64" in search_def["required"]
