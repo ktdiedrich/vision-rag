@@ -415,7 +415,6 @@ async def clear_store(clear_images: bool = False):
         raise HTTPException(status_code=503, detail="Service not initialized")
     
     embeddings_before = rag_store.count()
-    images_before = image_store.count()
     
     # Clear embeddings
     rag_store.clear()
