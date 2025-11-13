@@ -7,8 +7,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from vision_rag import (
-    download_organmnist,
-    load_organmnist_data,
+    download_medmnist,
+    load_medmnist_data,
     CLIPImageEncoder,
     ChromaRAGStore,
     ImageSearcher,
@@ -24,12 +24,12 @@ def main():
     
     # Step 1: Download dataset
     print("\n[1/6] Downloading OrganSMNIST dataset...")
-    download_organmnist(root="./data")
+    download_medmnist(dataset_name="OrganSMNIST", root="./data")
     print("✓ Dataset downloaded")
     
     # Step 2: Load training data (use subset for demo)
     print("\n[2/6] Loading training data...")
-    train_images, train_labels = load_organmnist_data(split="train", root="./data")
+    train_images, train_labels = load_medmnist_data(dataset_name="OrganSMNIST", split="train", root="./data")
     print(f"✓ Loaded {len(train_images)} training images")
     
     # Use a subset for faster demo (100 images)

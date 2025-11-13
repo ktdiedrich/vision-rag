@@ -7,7 +7,7 @@ import shutil
 from conftest import network_required
 from vision_rag.data_loader import (
     download_medmnist,
-    load_organmnist_data,
+    load_medmnist_data,
 )
 from vision_rag.encoder import CLIPImageEncoder
 from vision_rag.rag_store import ChromaRAGStore
@@ -40,8 +40,14 @@ def test_end_to_end_pipeline(temp_data_dir, temp_db_dir):
     # Step 1: Download OrganSMNIST dataset
     download_medmnist(dataset_name="OrganSMNIST", root=temp_data_dir, size=TEST_INTEGRATION_SIZE)
     
-    # Step 2: Load training data (use a small subset for testing)
-    train_images, train_labels = load_organmnist_data(split="train", root=temp_data_dir, size=TEST_INTEGRATION_SIZE)
+    # Load a small subset
+    print("Loading data...")
+    train_images, train_labels = load_medmnist_data(
+        dataset_name="OrganSMNIST",
+        split="train",
+        root=temp_data_dir,
+        size=TEST_INTEGRATION_SIZE,
+    )
     
     # Use only first 20 images for faster testing
     train_images_subset = train_images[:20]
@@ -73,7 +79,7 @@ def test_end_to_end_pipeline(temp_data_dir, temp_db_dir):
     assert rag_store.count() == len(train_images_subset)
     
     # Step 6: Load test data
-    test_images, test_labels = load_organmnist_data(split="test", root=temp_data_dir)
+    test_images, test_labels = load_medmnist_data(dataset_name="OrganSMNIST", split="test", root=temp_data_dir)
     
     # Use a small subset for testing
     test_images_subset = test_images[:5]
@@ -114,7 +120,7 @@ def test_pipeline_with_same_image(temp_data_dir, temp_db_dir):
     
     # Download and load data
     download_medmnist(dataset_name="OrganSMNIST", root=temp_data_dir, size=TEST_INTEGRATION_SIZE)
-    train_images, train_labels = load_organmnist_data(split="train", root=temp_data_dir, size=TEST_INTEGRATION_SIZE)
+    train_images, train_labels = load_medmnist_data(dataset_name="OrganSMNIST", split="train", root=temp_data_dir, size=TEST_INTEGRATION_SIZE)
     
     # Use small subset
     train_images_subset = train_images[:10]

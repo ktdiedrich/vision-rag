@@ -12,10 +12,8 @@ from .config import (
 )
 from .data_loader import (
     download_medmnist,
-    load_organmnist_data,
     load_medmnist_data,
     get_image_from_array,
-    get_organmnist_label_names,
     get_medmnist_label_names,
     get_human_readable_label,
 )
@@ -39,10 +37,8 @@ __all__ = [
     "list_available_datasets",
     # Data loading
     "download_medmnist",
-    "load_organmnist_data",
     "load_medmnist_data",
     "get_image_from_array",
-    "get_organmnist_label_names",
     "get_medmnist_label_names",
     "get_human_readable_label",
     # Core components

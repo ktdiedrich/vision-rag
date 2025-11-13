@@ -97,26 +97,7 @@ def load_medmnist_data(
     return images, labels
 
 
-def load_organmnist_data(
-    split: str = "train", root: str = None, size: int = None
-) -> Tuple[np.ndarray, np.ndarray]:
-    """
-    Load OrganSMNIST dataset.
-    
-    Args:
-        split: Dataset split ('train' or 'test')
-        root: Root directory where dataset is saved. If None, uses default permanent directory.
-        size: Image size to load (28, 64, 128, or 224). If None, uses MEDMNIST_SIZE from config (default: 224).
-        
-    Returns:
-        Tuple of (images, labels) where images is an array of shape (N, H, W)
-        and labels is an array of shape (N,)
-        
-    Note:
-        This function is kept for backward compatibility.
-        Use load_medmnist_data() for more flexibility.
-    """
-    return load_medmnist_data(dataset_name="OrganSMNIST", split=split, root=root, size=size)
+
 
 
 def get_image_from_array(image_array: np.ndarray) -> Image.Image:
@@ -190,23 +171,6 @@ def get_medmnist_label_names(dataset_name: str = None, root: str = None, size: i
         # Return generic labels if no info available
         n_classes = config.get("n_classes", 10)
         return {i: f"Class {i}" for i in range(n_classes)}
-
-
-def get_organmnist_label_names() -> dict:
-    """
-    Get human readable label names for OrganSMNIST dataset.
-    
-    Returns:
-        Dictionary mapping label indices to human readable names
-        
-    Raises:
-        FileNotFoundError: If the dataset file doesn't exist and needs to be downloaded
-        
-    Note:
-        This function is kept for backward compatibility.
-        Use get_medmnist_label_names() for more flexibility.
-    """
-    return get_medmnist_label_names(dataset_name="OrganSMNIST")
 
 
 def get_human_readable_label(label_index: int, dataset_name: str = None, root: str = None, size: int = None) -> str:
