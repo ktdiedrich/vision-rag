@@ -3,7 +3,6 @@
 
 import asyncio
 import json
-import sys
 from pathlib import Path
 
 async def test_mcp_stdio():
