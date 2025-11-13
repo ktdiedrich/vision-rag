@@ -587,7 +587,7 @@ class VisionRAGMCPServer:
                 "success": True,
                 "images_processed": len(pil_images),
                 "images_skipped": len(image_files) - len(pil_images),
-                "embeddings_before": embeddings_before if clear_existing else embeddings_before,
+                "embeddings_before": embeddings_before,
                 "total_embeddings": total_embeddings,
                 "cleared_before_reindex": clear_existing,
                 "message": message,
