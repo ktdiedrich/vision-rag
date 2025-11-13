@@ -23,7 +23,6 @@ from .rag_store import ChromaRAGStore
 from .search import ImageSearcher
 from .data_loader import (
     get_human_readable_label,
-    get_organmnist_label_names,
     load_medmnist_data,
     get_image_from_array,
 )
