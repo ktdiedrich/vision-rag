@@ -16,7 +16,6 @@ from .config import (
     MEDMNIST_DATASET, 
     IMAGE_SIZE,
     AVAILABLE_DATASETS,
-    list_available_datasets,
 )
 from .encoder import CLIPImageEncoder
 from .rag_store import ChromaRAGStore
