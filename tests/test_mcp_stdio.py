@@ -105,7 +105,6 @@ async def test_mcp_stdio():
         
         # Wait for preload to complete (might take a while)
         print("⏳ Waiting for preload to complete...")
-        await asyncio.sleep(30)  # Give it time to download and process
         
         print(f"✅ Preload response: {json.dumps(preload_response, indent=2)}")
         
