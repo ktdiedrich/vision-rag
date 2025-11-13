@@ -250,7 +250,6 @@ class VisionRAGMCPServer:
             Statistics about the store
         """
         # Get absolute paths for debugging
-        import os
         image_store_abs = self.image_store.storage_dir.resolve()
         chroma_abs = Path(self.rag_store.persist_directory).resolve()
         
