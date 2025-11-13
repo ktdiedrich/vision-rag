@@ -271,9 +271,9 @@ class VisionRAGMCPServer:
         Returns:
             Mapping of label IDs to human-readable names
         """
-        from .data_loader import get_organmnist_label_names
+        from .data_loader import get_medmnist_label_names
         
-        label_names = get_organmnist_label_names()
+        label_names = get_medmnist_label_names(dataset_name="OrganSMNIST")
         
         return {
             "labels": label_names,

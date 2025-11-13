@@ -9,7 +9,7 @@ def test_imports():
     """Test that all modules can be imported."""
     from vision_rag import (
         download_medmnist,
-        load_organmnist_data,
+        load_medmnist_data,
         CLIPImageEncoder,
         ChromaRAGStore,
         ImageSearcher,
@@ -17,7 +17,7 @@ def test_imports():
     
     # Just verify imports work
     assert download_medmnist is not None
-    assert load_organmnist_data is not None
+    assert load_medmnist_data is not None
     assert CLIPImageEncoder is not None
     assert ChromaRAGStore is not None
     assert ImageSearcher is not None

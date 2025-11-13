@@ -10,7 +10,6 @@ from pathlib import Path
 from conftest import network_required
 from vision_rag.data_loader import (
     download_medmnist,
-    load_organmnist_data,
     load_medmnist_data,
     get_image_from_array,
     get_medmnist_label_names,
@@ -77,7 +76,7 @@ def test_download_organmnist_already_exists(use_permanent_data):
 
 def test_load_organmnist_train_data(use_permanent_data):
     """Test loading training data from permanent directory."""
-    images, labels = load_organmnist_data(split="train", root=use_permanent_data, size=TEST_LOADER_SIZE)
+    images, labels = load_medmnist_data(dataset_name="OrganSMNIST", split="train", root=use_permanent_data, size=TEST_LOADER_SIZE)
     
     # Check shapes
     assert images.ndim == 3  # (N, 28, 28)
@@ -92,7 +91,7 @@ def test_load_organmnist_train_data(use_permanent_data):
 
 def test_load_organmnist_test_data(use_permanent_data):
     """Test loading test data from permanent directory."""
-    images, labels = load_organmnist_data(split="test", root=use_permanent_data, size=TEST_LOADER_SIZE)
+    images, labels = load_medmnist_data(dataset_name="OrganSMNIST", split="test", root=use_permanent_data, size=TEST_LOADER_SIZE)
     
     # Check shapes
     assert images.ndim == 3  # (N, 28, 28)
@@ -104,7 +103,7 @@ def test_load_organmnist_test_data(use_permanent_data):
 def test_load_organmnist_with_temp_dir(temp_data_dir):
     """Test loading data from a specified temporary directory."""
     download_medmnist(dataset_name="OrganSMNIST", root=temp_data_dir, size=TEST_LOADER_SIZE)
-    images, labels = load_organmnist_data(split="train", root=temp_data_dir, size=TEST_LOADER_SIZE)
+    images, labels = load_medmnist_data(dataset_name="OrganSMNIST", split="train", root=temp_data_dir, size=TEST_LOADER_SIZE)
     
     # Check shapes
     assert images.ndim == 3  # (N, 28, 28)

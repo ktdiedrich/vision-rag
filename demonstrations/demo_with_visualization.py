@@ -18,7 +18,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 import numpy as np
 
 from vision_rag import (
-    load_organmnist_data,
+    load_medmnist_data,
     get_image_from_array,
     get_human_readable_label,
     CLIPImageEncoder,
@@ -42,8 +42,8 @@ def main():
     
     # Step 1: Load data
     print("\n📥 Loading OrganSMNIST data...")
-    train_images, train_labels = load_organmnist_data(split="train")
-    test_images, test_labels = load_organmnist_data(split="test")
+    train_images, train_labels = load_medmnist_data(dataset_name="OrganSMNIST", split="train")
+    test_images, test_labels = load_medmnist_data(dataset_name="OrganSMNIST", split="test")
     
     print(f"   Training set: {len(train_images)} images")
     print(f"   Test set: {len(test_images)} images")

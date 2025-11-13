@@ -15,7 +15,7 @@ import sys
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from vision_rag import (
-    load_organmnist_data,
+    load_medmnist_data,
     get_image_from_array,
     get_human_readable_label,
     CLIPImageEncoder,
@@ -23,6 +23,7 @@ from vision_rag import (
     ImageSearcher,
     RAGVisualizer,
     ImageFileStore,
+    CLIP_MODEL_NAME
 )
 
 
@@ -37,9 +38,10 @@ def main():
     print(f"Visualizations will be saved to: {visualizer.output_dir}")
     
     # Load small subset of data for quick example
-    print("\n📥 Loading data...")
-    train_images, train_labels = load_organmnist_data(split="train")
-    test_images, test_labels = load_organmnist_data(split="test")
+    # Step 1: Load data
+    print("\n📥 Loading OrganSMNIST data...")
+    train_images, train_labels = load_medmnist_data(dataset_name="OrganSMNIST", split="train")
+    test_images, test_labels = load_medmnist_data(dataset_name="OrganSMNIST", split="test")
     
     # Use small subsets for demonstration
     train_subset = [(train_images[i], int(train_labels[i])) for i in range(50)]
