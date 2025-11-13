@@ -806,7 +806,7 @@ class TestSearchByLabelEndpoint:
     def test_search_by_label_no_results(self, client, setup_test_data):
         """Test searching by label with no matching results."""
         request = {
-            "label": 99,  # Unlikely to exist
+            "label": 99,  # Non-existent label for testing empty results
             "n_results": 10
         }
         
