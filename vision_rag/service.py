@@ -346,16 +346,27 @@ async def preload_dataset(request: PreloadRequest):
             ids = [f"{request.dataset_name.lower()}_{request.split}_{current_count + i}" for i in range(len(images))]
             
             # Create metadata with labels and image paths
-            metadatas = [
-                {
+            metadatas = []
+            for i in range(len(images)):
+                # Handle both scalar and array labels
+                label_value = labels[i]
+                if hasattr(label_value, '__len__') and not isinstance(label_value, str):
+                    # Multi-dimensional label (e.g., multi-label classification)
+                    # Convert to JSON string since ChromaDB doesn't support list metadata
+                    import json
+                    label_list = label_value.tolist() if hasattr(label_value, 'tolist') else list(label_value)
+                    label_value = json.dumps(label_list)
+                else:
+                    # Scalar label - keep as int
+                    label_value = int(label_value)
+                
+                metadatas.append({
                     "dataset": request.dataset_name,
                     "split": request.split,
-                    "label": int(labels[i]),
+                    "label": label_value,
                     "index": i,
                     "image_path": image_paths[i],
-                }
-                for i in range(len(images))
-            ]
+                })
             
             # Add to RAG store
             print(f"📊 Adding {len(embeddings)} embeddings to RAG store...")
