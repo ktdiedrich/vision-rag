@@ -522,3 +522,429 @@ class TestConcurrency:
         
         # Clean up
         client.delete("/clear")
+
+
+class TestPreloadEndpoint:
+    """Comprehensive tests for the preload dataset endpoint."""
+    
+    def test_preload_dataset_success(self, client):
+        """Test successful dataset preloading."""
+        # Clear first
+        client.delete("/clear")
+        
+        request = {
+            "dataset_name": "PneumoniaMNIST",
+            "split": "train",
+            "max_images": 5,
+            "size": 28
+        }
+        
+        response = client.post("/preload", json=request)
+        
+        if response.status_code == 200:
+            data = response.json()
+            assert data["status"] == "success"
+            assert data["dataset_name"] == "PneumoniaMNIST"
+            assert data["split"] == "train"
+            assert data["images_loaded"] <= 5
+            assert data["total_embeddings"] >= data["images_loaded"]
+    
+    def test_preload_invalid_dataset(self, client):
+        """Test preloading with invalid dataset name."""
+        request = {
+            "dataset_name": "InvalidDatasetName",
+            "split": "train",
+            "max_images": 5
+        }
+        
+        response = client.post("/preload", json=request)
+        assert response.status_code == 400
+        assert "Unknown dataset" in response.json()["detail"]
+    
+    def test_preload_invalid_split(self, client):
+        """Test preloading with invalid split."""
+        request = {
+            "dataset_name": "PneumoniaMNIST",
+            "split": "invalid_split",
+            "max_images": 5
+        }
+        
+        response = client.post("/preload", json=request)
+        assert response.status_code == 400
+        assert "Invalid split" in response.json()["detail"]
+    
+    def test_preload_multiple_datasets(self, client):
+        """Test preloading multiple datasets sequentially."""
+        client.delete("/clear")
+        
+        # Preload first dataset
+        request1 = {
+            "dataset_name": "PneumoniaMNIST",
+            "split": "train",
+            "max_images": 3,
+            "size": 28
+        }
+        
+        response1 = client.post("/preload", json=request1)
+        
+        if response1.status_code == 200:
+            count_after_first = response1.json()["total_embeddings"]
+            
+            # Preload second dataset
+            request2 = {
+                "dataset_name": "BreastMNIST",
+                "split": "train",
+                "max_images": 3,
+                "size": 28
+            }
+            
+            response2 = client.post("/preload", json=request2)
+            
+            if response2.status_code == 200:
+                count_after_second = response2.json()["total_embeddings"]
+                assert count_after_second >= count_after_first
+    
+    def test_preload_with_different_sizes(self, client):
+        """Test preloading with different image sizes."""
+        for size in [28, 64]:
+            request = {
+                "dataset_name": "PneumoniaMNIST",
+                "split": "train",
+                "max_images": 2,
+                "size": size
+            }
+            
+            response = client.post("/preload", json=request)
+            if response.status_code == 200:
+                data = response.json()
+                assert data["status"] == "success"
+
+
+class TestClearEndpoint:
+    """Comprehensive tests for the clear endpoint."""
+    
+    def test_clear_embeddings_only(self, client, setup_test_data):
+        """Test clearing only embeddings."""
+        initial_stats = client.get("/stats").json()
+        initial_embeddings = initial_stats["total_embeddings"]
+        initial_images = initial_stats["total_images"]
+        
+        assert initial_embeddings > 0
+        
+        response = client.delete("/clear?clear_images=false")
+        assert response.status_code == 200
+        
+        data = response.json()
+        assert data["status"] == "success"
+        assert data["embeddings_cleared"] == initial_embeddings
+        assert data["images_deleted"] == 0
+        assert data["embeddings_remaining"] == 0
+        
+        # Verify images still exist
+        stats = client.get("/stats").json()
+        assert stats["total_embeddings"] == 0
+        assert stats["total_images"] == initial_images
+    
+    def test_clear_both_embeddings_and_images(self, client, setup_test_data):
+        """Test clearing both embeddings and images."""
+        initial_stats = client.get("/stats").json()
+        initial_embeddings = initial_stats["total_embeddings"]
+        
+        response = client.delete("/clear?clear_images=true")
+        assert response.status_code == 200
+        
+        data = response.json()
+        assert data["status"] == "success"
+        assert data["embeddings_cleared"] == initial_embeddings
+        assert data["images_deleted"] > 0
+        assert data["embeddings_remaining"] == 0
+        assert data["images_remaining"] == 0
+    
+    def test_clear_empty_store(self, client):
+        """Test clearing an already empty store."""
+        # Ensure store is empty
+        client.delete("/clear?clear_images=true")
+        
+        response = client.delete("/clear")
+        assert response.status_code == 200
+        
+        data = response.json()
+        assert data["embeddings_cleared"] == 0
+
+
+class TestGetDatasetsEndpoint:
+    """Tests for the get available datasets endpoint."""
+    
+    def test_get_datasets_list(self, client):
+        """Test getting list of available datasets."""
+        response = client.get("/datasets")
+        assert response.status_code == 200
+        
+        data = response.json()
+        assert "datasets" in data
+        assert "count" in data
+        assert data["count"] > 0
+        assert isinstance(data["datasets"], dict)
+    
+    def test_datasets_have_required_fields(self, client):
+        """Test that each dataset has all required fields."""
+        response = client.get("/datasets")
+        assert response.status_code == 200
+        
+        data = response.json()
+        
+        for name, info in data["datasets"].items():
+            assert "name" in info
+            assert "description" in info
+            assert "n_classes" in info
+            assert "image_size" in info
+            assert "channels" in info
+            assert info["n_classes"] > 0
+    
+    def test_datasets_include_common_ones(self, client):
+        """Test that common MedMNIST datasets are included."""
+        response = client.get("/datasets")
+        assert response.status_code == 200
+        
+        data = response.json()
+        datasets = data["datasets"]
+        
+        common_datasets = ["PathMNIST", "ChestMNIST", "PneumoniaMNIST", "OrganSMNIST"]
+        for ds_name in common_datasets:
+            assert ds_name in datasets, f"Missing dataset: {ds_name}"
+
+
+class TestGetLabelsEndpoint:
+    """Tests for the get available labels endpoint."""
+    
+    def test_get_labels(self, client):
+        """Test getting available labels."""
+        response = client.get("/labels")
+        assert response.status_code == 200
+        
+        data = response.json()
+        assert "labels" in data
+        assert "count" in data
+        assert "dataset" in data
+        assert isinstance(data["labels"], dict)
+        assert data["count"] > 0
+    
+    def test_labels_are_strings(self, client):
+        """Test that all label values are strings."""
+        response = client.get("/labels")
+        assert response.status_code == 200
+        
+        data = response.json()
+        
+        for value in data["labels"].values():
+            assert isinstance(value, str)
+            assert len(value) > 0
+
+
+class TestSearchEndpoint:
+    """Extended tests for search endpoint."""
+    
+    def test_search_with_different_n_results(self, client, setup_test_data, sample_image_base64):
+        """Test search with varying n_results values."""
+        for n in [1, 3, 5]:
+            request = {
+                "image_base64": sample_image_base64,
+                "n_results": n
+            }
+            
+            response = client.post("/search", json=request)
+            assert response.status_code == 200
+            
+            data = response.json()
+            assert data["count"] <= n
+            assert len(data["results"]) <= n
+    
+    def test_search_returns_query_info(self, client, setup_test_data, sample_image_base64):
+        """Test that search returns query info."""
+        request = {
+            "image_base64": sample_image_base64,
+            "n_results": 3
+        }
+        
+        response = client.post("/search", json=request)
+        assert response.status_code == 200
+        
+        data = response.json()
+        assert "query_info" in data
+        assert "image_size" in data["query_info"]
+        assert "image_mode" in data["query_info"]
+    
+    def test_search_invalid_base64(self, client):
+        """Test search with invalid base64 string."""
+        request = {
+            "image_base64": "not_a_valid_base64_image",
+            "n_results": 5
+        }
+        
+        response = client.post("/search", json=request)
+        assert response.status_code == 400
+
+
+class TestSearchByLabelEndpoint:
+    """Extended tests for search by label endpoint."""
+    
+    def test_search_by_label_with_results(self, client, setup_test_data):
+        """Test searching by label when results exist."""
+        request = {
+            "label": 0,
+            "n_results": 10
+        }
+        
+        response = client.post("/search/label", json=request)
+        assert response.status_code == 200
+        
+        data = response.json()
+        assert "count" in data
+        assert "results" in data
+        assert isinstance(data["results"], list)
+    
+    def test_search_by_label_no_results(self, client, setup_test_data):
+        """Test searching by label with no matching results."""
+        request = {
+            "label": 99,  # Unlikely to exist
+            "n_results": 10
+        }
+        
+        response = client.post("/search/label", json=request)
+        assert response.status_code == 200
+        
+        data = response.json()
+        assert data["count"] == 0
+        assert len(data["results"]) == 0
+    
+    def test_search_by_label_includes_human_readable(self, client, setup_test_data):
+        """Test that search by label includes human readable label."""
+        request = {
+            "label": 0,
+            "n_results": 5
+        }
+        
+        response = client.post("/search/label", json=request)
+        assert response.status_code == 200
+        
+        data = response.json()
+        assert "human_readable_label" in data["query_info"]
+    
+    def test_search_by_label_with_n_results_limit(self, client, setup_test_data):
+        """Test search by label respects n_results limit."""
+        request = {
+            "label": 0,
+            "n_results": 2
+        }
+        
+        response = client.post("/search/label", json=request)
+        assert response.status_code == 200
+        
+        data = response.json()
+        assert data["count"] <= 2
+
+
+class TestAddImageEndpoint:
+    """Extended tests for add image endpoint."""
+    
+    def test_add_image_with_metadata(self, client, sample_image_base64):
+        """Test adding image with custom metadata."""
+        request = {
+            "image_base64": sample_image_base64,
+            "metadata": {
+                "label": 5,
+                "custom_field": "test_value",
+                "number": 42
+            }
+        }
+        
+        response = client.post("/add", json=request)
+        assert response.status_code == 200
+        
+        data = response.json()
+        assert data["status"] == "success"
+        assert "id" in data
+        assert "metadata" in data
+        assert data["metadata"]["custom_field"] == "test_value"
+        assert data["metadata"]["number"] == 42
+    
+    def test_add_image_without_metadata(self, client, sample_image_base64):
+        """Test adding image without metadata."""
+        request = {
+            "image_base64": sample_image_base64
+        }
+        
+        response = client.post("/add", json=request)
+        assert response.status_code == 200
+        
+        data = response.json()
+        assert data["status"] == "success"
+    
+    def test_add_image_returns_unique_ids(self, client, sample_image_base64):
+        """Test that consecutive additions return unique IDs."""
+        ids = []
+        
+        for _ in range(3):
+            request = {"image_base64": sample_image_base64}
+            response = client.post("/add", json=request)
+            assert response.status_code == 200
+            ids.append(response.json()["id"])
+        
+        # All IDs should be unique
+        assert len(ids) == len(set(ids))
+    
+    def test_add_image_invalid_base64(self, client):
+        """Test adding image with invalid base64."""
+        request = {
+            "image_base64": "invalid_base64_string"
+        }
+        
+        response = client.post("/add", json=request)
+        assert response.status_code == 400
+
+
+class TestResponseModels:
+    """Test that API responses match their models."""
+    
+    def test_search_response_structure(self, client, setup_test_data, sample_image_base64):
+        """Test search response has correct structure."""
+        request = {
+            "image_base64": sample_image_base64,
+            "n_results": 3
+        }
+        
+        response = client.post("/search", json=request)
+        assert response.status_code == 200
+        
+        data = response.json()
+        assert "query_info" in data
+        assert "results" in data
+        assert "count" in data
+        
+        for result in data["results"]:
+            assert "id" in result
+            assert "distance" in result
+            assert "metadata" in result
+    
+    def test_health_response_structure(self, client):
+        """Test health response structure."""
+        response = client.get("/health")
+        assert response.status_code == 200
+        
+        data = response.json()
+        assert "status" in data
+        assert "encoder_model" in data
+        assert "collection_name" in data
+        assert "embeddings_count" in data
+    
+    def test_stats_response_structure(self, client):
+        """Test stats response structure."""
+        response = client.get("/stats")
+        assert response.status_code == 200
+        
+        data = response.json()
+        assert "total_embeddings" in data
+        assert "total_images" in data
+        assert "collection_name" in data
+        assert "persist_directory" in data
+        assert "image_store_directory" in data
