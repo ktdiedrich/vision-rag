@@ -1561,13 +1561,13 @@ class TestReindexFromImages:
         assert result["cleared_before_reindex"] is True
     
     @pytest.mark.asyncio
-    async def test_reindex_no_images_error(self):
+    async def test_reindex_no_images_error(self, tmp_path):
         """Test reindexing when no images exist."""
-        # Create a fresh server with empty image store
+        # Create a fresh server with empty image store using temporary directories
         test_server = VisionRAGMCPServer(
             collection_name="test_reindex_empty",
-            persist_directory="./chroma_db_test_reindex_empty",
-            image_store_dir="./image_store_test_reindex_empty"
+            persist_directory=str(tmp_path / "chroma_db"),
+            image_store_dir=str(tmp_path / "image_store")
         )
         
         # Clear everything to ensure empty state
@@ -1579,9 +1579,6 @@ class TestReindexFromImages:
         assert "error" in result
         assert "No images found" in result["error"]
         assert "image_store_directory" in result
-        
-        # Cleanup
-        test_server.rag_store.clear()
     
     @pytest.mark.asyncio
     async def test_reindex_increments_count(self, server_with_data):
