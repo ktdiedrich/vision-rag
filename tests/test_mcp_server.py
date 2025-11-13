@@ -1586,7 +1586,6 @@ class TestReindexFromImages:
     @pytest.mark.asyncio
     async def test_reindex_increments_count(self, server_with_data):
         """Test that reindexing adds to existing embeddings when not clearing."""
-        initial_count = server_with_data.rag_store.count()
         
         # Add more images
         for i in range(3):
