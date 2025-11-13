@@ -9,7 +9,6 @@ Usage:
 """
 
 import requests
-import json
 
 
 API_BASE_URL = "http://localhost:8001"
