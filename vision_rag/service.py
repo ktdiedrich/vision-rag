@@ -343,7 +343,7 @@ async def preload_dataset(request: PreloadRequest):
         with _id_generation_lock:
             # Generate IDs
             current_count = rag_store.count()
-            ids = [f"{request.dataset_name.lower()}_{request.split}_{i}" for i in range(len(images))]
+            ids = [f"{request.dataset_name.lower()}_{request.split}_{current_count + i}" for i in range(len(images))]
             
             # Create metadata with labels and image paths
             metadatas = [
