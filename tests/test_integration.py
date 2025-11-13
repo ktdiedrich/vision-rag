@@ -42,7 +42,12 @@ def test_end_to_end_pipeline(temp_data_dir, temp_db_dir):
     
     # Load a small subset
     print("Loading data...")
-    train_images, train_labels = load_medmnist_data(dataset_name="OrganSMNIST", split="train")
+    train_images, train_labels = load_medmnist_data(
+        dataset_name="OrganSMNIST",
+        split="train",
+        root=temp_data_dir,
+        size=TEST_INTEGRATION_SIZE,
+    )
     
     # Use only first 20 images for faster testing
     train_images_subset = train_images[:20]
