@@ -18,7 +18,6 @@ import platform
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from vision_rag.mcp_server import VisionRAGMCPServer
-from vision_rag.config import AVAILABLE_DATASETS
 
 
 async def test_environment():
