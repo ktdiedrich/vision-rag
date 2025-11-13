@@ -10,12 +10,14 @@ async def test_mcp_stdio():
     """Test MCP server by sending JSON-RPC messages to its stdio interface."""
     
     # Start the MCP server as a subprocess
+    # Use parent of tests directory as cwd (project root)
+    project_root = Path(__file__).parent.parent
     proc = await asyncio.create_subprocess_exec(
         "uv", "run", "python", "-m", "vision_rag.mcp_server",
         stdin=asyncio.subprocess.PIPE,
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE,
-        cwd=Path(__file__).parent,
+        cwd=project_root,
     )
     
     async def read_response():
@@ -124,14 +126,22 @@ async def test_mcp_stdio():
     finally:
         # Cleanup
         print("\n🧹 Cleaning up...")
-        proc.terminate()
-        await proc.wait()
         
-        # Print stderr output
-        stderr_output = await proc.stderr.read()
-        if stderr_output:
-            print("\n📝 Server stderr output:")
-            print(stderr_output.decode())
+        # Print stderr output first (to diagnose why server died)
+        try:
+            stderr_output = await asyncio.wait_for(proc.stderr.read(), timeout=1.0)
+            if stderr_output:
+                print("\n📝 Server stderr output:")
+                print(stderr_output.decode())
+        except asyncio.TimeoutError:
+            print("⏱️ Timeout reading stderr")
+        
+        # Terminate only if still running
+        if proc.returncode is None:
+            proc.terminate()
+            await proc.wait()
+        else:
+            print(f"⚠️ Process already exited with code {proc.returncode}")
 
 if __name__ == "__main__":
     asyncio.run(test_mcp_stdio())
