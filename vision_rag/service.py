@@ -9,14 +9,25 @@ from fastapi import FastAPI, HTTPException, UploadFile, File
 from pydantic import BaseModel, Field
 from PIL import Image
 
-from .config import CLIP_MODEL_NAME, COLLECTION_NAME, PERSIST_DIRECTORY, MEDMNIST_DATASET, IMAGE_SIZE
+from .config import (
+    CLIP_MODEL_NAME, 
+    COLLECTION_NAME, 
+    PERSIST_DIRECTORY, 
+    MEDMNIST_DATASET, 
+    IMAGE_SIZE,
+    AVAILABLE_DATASETS,
+)
 from .encoder import CLIPImageEncoder
 from .rag_store import ChromaRAGStore
 from .search import ImageSearcher
-from .data_loader import get_human_readable_label
+from .data_loader import (
+    get_human_readable_label,
+    get_medmnist_label_names,
+    load_medmnist_data,
+    get_image_from_array,
+)
 from .utils import decode_base64_image
 from .image_store import ImageFileStore
-from .data_loader import get_medmnist_label_names
 
 
 # Pydantic models for API requests/responses
@@ -75,6 +86,39 @@ class LabelsResponse(BaseModel):
     labels: Dict[int, str] = Field(..., description="Mapping of label IDs to human-readable names")
     count: int = Field(..., description="Total number of labels")
     dataset: str = Field(..., description="Dataset name")
+
+
+class DatasetInfo(BaseModel):
+    """Information about a MedMNIST dataset."""
+    name: str
+    description: str
+    n_classes: int
+    image_size: int
+    channels: int
+
+
+class DatasetsResponse(BaseModel):
+    """Available datasets response."""
+    datasets: Dict[str, DatasetInfo]
+    count: int
+
+
+class PreloadRequest(BaseModel):
+    """Request model for preloading dataset."""
+    dataset_name: str = Field(..., description="Name of MedMNIST dataset to load")
+    split: str = Field("train", description="Dataset split: 'train', 'test', or 'val'")
+    max_images: Optional[int] = Field(None, description="Maximum number of images to load (None for all)")
+    size: Optional[int] = Field(None, description="Image size to download (28, 64, 128, or 224). None uses config default.")
+
+
+class PreloadResponse(BaseModel):
+    """Response model for preload operation."""
+    status: str
+    dataset_name: str
+    split: str
+    images_loaded: int
+    total_embeddings: int
+    message: str
 
 
 # Global state (initialized on startup)
@@ -201,6 +245,193 @@ async def get_available_labels():
             status_code=500,
             detail=f"Failed to retrieve labels: {str(e)}"
         )
+
+
+@app.get("/datasets", response_model=DatasetsResponse)
+async def get_available_datasets():
+    """
+    Get all available MedMNIST datasets that can be loaded.
+    
+    Returns:
+        Information about all available datasets
+    """
+    datasets_info = {}
+    for name, config in AVAILABLE_DATASETS.items():
+        datasets_info[name] = DatasetInfo(
+            name=name,
+            description=config["description"],
+            n_classes=config["n_classes"],
+            image_size=config["image_size"],
+            channels=config["channels"],
+        )
+    
+    return DatasetsResponse(
+        datasets=datasets_info,
+        count=len(datasets_info),
+    )
+
+
+@app.post("/preload", response_model=PreloadResponse)
+async def preload_dataset(request: PreloadRequest):
+    """
+    Preload a MedMNIST dataset into the RAG store.
+    
+    This endpoint downloads (if needed) and loads images from a MedMNIST dataset,
+    encodes them using CLIP, and stores the embeddings in the RAG store.
+    
+    Args:
+        request: Preload request with dataset name and options
+        
+    Returns:
+        Status of the preload operation
+    """
+    if encoder is None or rag_store is None or image_store is None:
+        raise HTTPException(status_code=503, detail="Service not initialized")
+    
+    # Validate dataset name
+    if request.dataset_name not in AVAILABLE_DATASETS:
+        available = list(AVAILABLE_DATASETS.keys())
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unknown dataset '{request.dataset_name}'. Available: {available}"
+        )
+    
+    # Validate split
+    if request.split not in ["train", "test", "val"]:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid split '{request.split}'. Must be 'train', 'test', or 'val'"
+        )
+    
+    try:
+        print(f"🔄 Preloading {request.dataset_name} ({request.split} split)...")
+        
+        # Load dataset
+        images, labels = load_medmnist_data(
+            dataset_name=request.dataset_name,
+            split=request.split,
+            size=request.size,
+        )
+        
+        print(f"📦 Loaded {len(images)} images from {request.dataset_name}")
+        
+        # Limit number of images if specified
+        if request.max_images is not None and request.max_images < len(images):
+            images = images[:request.max_images]
+            labels = labels[:request.max_images]
+            print(f"✂️  Limited to {request.max_images} images")
+        
+        # Convert images to PIL and save to disk
+        pil_images = []
+        image_paths = []
+        for img_array in images:
+            pil_img = get_image_from_array(img_array)
+            pil_images.append(pil_img)
+            
+            # Save to image store
+            img_path = image_store.save_image(pil_img)
+            image_paths.append(img_path)
+        
+        print(f"💾 Saved {len(pil_images)} images to disk")
+        
+        # Encode all images
+        print(f"🧠 Encoding images with CLIP...")
+        embeddings = encoder.encode_images(pil_images)
+        print(f"✅ Encoded {len(embeddings)} images")
+        
+        # Use lock to ensure atomic ID generation and storage
+        with _id_generation_lock:
+            # Generate IDs
+            current_count = rag_store.count()
+            ids = [f"{request.dataset_name.lower()}_{request.split}_{current_count + i}" for i in range(len(images))]
+            
+            # Create metadata with labels and image paths
+            metadatas = []
+            for i in range(len(images)):
+                # Handle both scalar and array labels
+                label_value = labels[i]
+                if hasattr(label_value, '__len__') and not isinstance(label_value, str):
+                    # Multi-dimensional label (e.g., multi-label classification)
+                    # Convert to JSON string since ChromaDB doesn't support list metadata
+                    import json
+                    label_list = label_value.tolist() if hasattr(label_value, 'tolist') else list(label_value)
+                    label_value = json.dumps(label_list)
+                else:
+                    # Scalar label - keep as int
+                    label_value = int(label_value)
+                
+                metadatas.append({
+                    "dataset": request.dataset_name,
+                    "split": request.split,
+                    "label": label_value,
+                    "index": i,
+                    "image_path": image_paths[i],
+                })
+            
+            # Add to RAG store
+            print(f"📊 Adding {len(embeddings)} embeddings to RAG store...")
+            rag_store.add_embeddings(
+                embeddings=embeddings,
+                ids=ids,
+                metadatas=metadatas,
+            )
+        
+        total_embeddings = rag_store.count()
+        message = f"Successfully loaded {len(images)} images from {request.dataset_name} ({request.split})"
+        
+        print(f"✅ {message}")
+        print(f"📊 Total embeddings in store: {total_embeddings}")
+        
+        return PreloadResponse(
+            status="success",
+            dataset_name=request.dataset_name,
+            split=request.split,
+            images_loaded=len(images),
+            total_embeddings=total_embeddings,
+            message=message,
+        )
+        
+    except FileNotFoundError as e:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Dataset file not found: {str(e)}"
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error preloading dataset: {str(e)}"
+        )
+
+
+@app.delete("/clear")
+async def clear_store(clear_images: bool = False):
+    """
+    Clear embeddings and optionally images from the RAG store.
+    
+    Args:
+        clear_images: If True, also delete image files from disk (default: False)
+    """
+    if rag_store is None or image_store is None:
+        raise HTTPException(status_code=503, detail="Service not initialized")
+    
+    embeddings_before = rag_store.count()
+    
+    # Clear embeddings
+    rag_store.clear()
+    
+    # Optionally clear images
+    images_deleted = 0
+    if clear_images:
+        images_deleted = image_store.clear()
+    
+    return {
+        "status": "success",
+        "embeddings_cleared": embeddings_before,
+        "images_deleted": images_deleted,
+        "embeddings_remaining": rag_store.count(),
+        "images_remaining": image_store.count(),
+        "message": f"Cleared {embeddings_before} embeddings" + (f", deleted {images_deleted} images" if clear_images else ""),
+    }
 
 
 @app.post("/search", response_model=SearchResponse)
@@ -418,21 +649,6 @@ async def add_images_batch(files: List[UploadFile] = File(...)):
         
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Error adding images: {str(e)}")
-
-
-@app.delete("/clear")
-async def clear_store():
-    """Clear all embeddings from the RAG store."""
-    if rag_store is None:
-        raise HTTPException(status_code=503, detail="Service not initialized")
-    
-    rag_store.clear()
-    
-    return {
-        "status": "success",
-        "message": "All embeddings cleared",
-        "total_embeddings": rag_store.count(),
-    }
 
 
 if __name__ == "__main__":
