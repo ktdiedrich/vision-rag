@@ -6,7 +6,6 @@ import threading
 import traceback
 import uvicorn
 from contextlib import asynccontextmanager
-from pathlib import Path
 
 import numpy as np
 from fastapi import FastAPI, HTTPException, UploadFile, File
