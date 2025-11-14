@@ -91,9 +91,9 @@ class ChromaRAGStore:
         )
         
         return {
-            "ids": results["ids"][0] if results["ids"] else [],
-            "distances": results["distances"][0] if results["distances"] else [],
-            "metadatas": results["metadatas"][0] if results["metadatas"] else [],
+            "ids": results.get("ids", [[]])[0],
+            "distances": results.get("distances", [[]])[0],
+            "metadatas": results.get("metadatas", [[]])[0],
         }
     
     def search_by_label(
@@ -122,9 +122,39 @@ class ChromaRAGStore:
         )
         
         return {
-            "ids": results["ids"] if results["ids"] else [],
-            "metadatas": results["metadatas"] if results["metadatas"] else [],
+            "ids": results.get("ids", []),
+            "metadatas": results.get("metadatas", []),
             "embeddings": results.get("embeddings", []),
+        }
+    
+    def get_all_embeddings(self) -> dict:
+        """
+        Retrieve all embeddings and metadata from the store.
+        
+        Returns:
+            Dictionary containing:
+            - ids: List of all IDs
+            - embeddings: List of all embeddings
+            - metadatas: List of all metadata dictionaries
+        """
+        total_count = self.collection.count()
+        if total_count == 0:
+            return {
+                "ids": [],
+                "embeddings": [],
+                "metadatas": [],
+            }
+        
+        # Get all items from the collection
+        results = self.collection.get(
+            limit=total_count,
+            include=["embeddings", "metadatas"]
+        )
+        
+        return {
+            "ids": results.get("ids", []),
+            "embeddings": results.get("embeddings", []),
+            "metadatas": results.get("metadatas", []),
         }
     
     def count(self) -> int:

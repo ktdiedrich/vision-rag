@@ -72,6 +72,7 @@ class VisionRAGMCPServer:
             "preload_dataset": self.preload_dataset,
             "clear_store": self.clear_store,
             "reindex_from_images": self.reindex_from_images,
+            "generate_tsne_plot": self.generate_tsne_plot,
         }
     
     async def handle_tool_call(self, tool_name: str, arguments: Dict[str, Any]) -> Dict[str, Any]:
@@ -601,6 +602,87 @@ class VisionRAGMCPServer:
                 "error": error_msg,
             }
     
+    async def generate_tsne_plot(
+        self,
+        output_filename: str = "tsne_visualization.png",
+        method: str = "tsne",
+        title: str = "RAG Store Embedding Space Visualization",
+    ) -> Dict[str, Any]:
+        """
+        Generate a t-SNE (or other dimensionality reduction) plot of all embeddings in the RAG store.
+        
+        Args:
+            output_filename: Filename for the generated plot (saved in current directory)
+            method: Dimensionality reduction method ('tsne', 'pca', or 'umap')
+            title: Title for the visualization
+            
+        Returns:
+            Status and path to the generated plot
+        """
+        try:
+            from .visualization import RAGVisualizer
+            import numpy as np
+            
+            print(f"📊 Generating {method.upper()} visualization...", file=sys.stderr)
+            
+            # Get all embeddings and metadata
+            all_data = self.rag_store.get_all_embeddings()
+            
+            if len(all_data.get("embeddings", [])) == 0:
+                return {
+                    "success": False,
+                    "error": "No embeddings found in RAG store. Please add images first.",
+                    "total_embeddings": 0,
+                }
+            
+            # Convert embeddings to numpy array
+            embeddings = np.array(all_data["embeddings"])
+            
+            # Extract labels from metadata
+            labels = []
+            for meta in all_data["metadatas"]:
+                # Try to get label from metadata, default to 0 if not found
+                label = meta.get("label", meta.get("index", 0))
+                # Convert to int, handling various types
+                try:
+                    if isinstance(label, (list, tuple, np.ndarray)):
+                        label = label[0] if len(label) > 0 else 0
+                    labels.append(int(label))
+                except (ValueError, TypeError):
+                    labels.append(0)
+            
+            print(f"📈 Processing {len(embeddings)} embeddings...", file=sys.stderr)
+            
+            # Create visualizer and generate plot
+            visualizer = RAGVisualizer(output_dir="./")
+            output_path = visualizer.save_embedding_space_visualization(
+                embeddings=embeddings,
+                labels=labels,
+                method=method,
+                filename=output_filename,
+                title=title,
+            )
+            
+            print(f"✅ Saved visualization to: {output_path}", file=sys.stderr)
+            
+            return {
+                "success": True,
+                "output_path": output_path,
+                "total_embeddings": len(embeddings),
+                "method": method,
+                "unique_labels": len(set(labels)),
+                "message": f"Successfully generated {method.upper()} plot with {len(embeddings)} embeddings",
+            }
+            
+        except Exception as e:
+            error_msg = f"Error generating t-SNE plot: {str(e)}"
+            print(f"❌ {error_msg}", file=sys.stderr)
+            traceback.print_exc(file=sys.stderr)
+            return {
+                "success": False,
+                "error": error_msg,
+            }
+    
     def get_tool_definitions(self) -> List[Dict[str, Any]]:
         """
         Get MCP tool definitions for agent discovery.
@@ -731,6 +813,28 @@ class VisionRAGMCPServer:
                         "type": "boolean",
                         "description": "If True, clear existing embeddings before reindexing (default: False)",
                         "default": False,
+                    },
+                },
+                "required": [],
+            },
+            {
+                "name": "generate_tsne_plot",
+                "description": "Generate a t-SNE (or PCA/UMAP) visualization of all embeddings in the RAG store. Creates a 2D scatter plot showing how images cluster in embedding space.",
+                "parameters": {
+                    "output_filename": {
+                        "type": "string",
+                        "description": "Filename for the generated plot (default: 'tsne_visualization.png')",
+                        "default": "tsne_visualization.png",
+                    },
+                    "method": {
+                        "type": "string",
+                        "description": "Dimensionality reduction method: 'tsne', 'pca', or 'umap' (default: 'tsne')",
+                        "default": "tsne",
+                    },
+                    "title": {
+                        "type": "string",
+                        "description": "Title for the visualization (default: 'RAG Store Embedding Space Visualization')",
+                        "default": "RAG Store Embedding Space Visualization",
                     },
                 },
                 "required": [],
