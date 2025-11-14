@@ -1570,15 +1570,20 @@ class TestReindexFromImages:
             image_store_dir=str(tmp_path / "image_store")
         )
         
-        # Clear everything to ensure empty state
-        await test_server.clear_store(clear_embeddings=True, clear_images=True)
-        
-        result = await test_server.reindex_from_images()
-        
-        assert result["success"] is False
-        assert "error" in result
-        assert "No images found" in result["error"]
-        assert "image_store_directory" in result
+        try:
+            # Clear everything to ensure empty state
+            await test_server.clear_store(clear_embeddings=True, clear_images=True)
+            
+            result = await test_server.reindex_from_images()
+            
+            assert result["success"] is False
+            assert "error" in result
+            assert "No images found" in result["error"]
+            assert "image_store_directory" in result
+        finally:
+            # Cleanup - clear both rag_store and image_store
+            test_server.rag_store.clear()
+            test_server.image_store.clear()
     
     @pytest.mark.asyncio
     async def test_reindex_increments_count(self, server_with_data):
