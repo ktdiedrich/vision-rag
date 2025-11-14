@@ -673,7 +673,7 @@ class VisionRAGMCPServer:
             }
             
         except Exception as e:
-            error_msg = f"Error generating t-SNE plot: {str(e)}"
+            error_msg = f"Error generating {method.upper()} plot: {str(e)}"
             print(f"❌ {error_msg}", file=sys.stderr)
             traceback.print_exc(file=sys.stderr)
             return {
