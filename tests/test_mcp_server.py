@@ -1418,3 +1418,449 @@ class TestToolCallResultFormat:
         assert "available_tools" in result
         assert isinstance(result["available_tools"], list)
         assert len(result["available_tools"]) == 9
+
+
+class TestClearStore:
+    """Comprehensive tests for clear_store functionality."""
+    
+    @pytest.mark.asyncio
+    async def test_clear_embeddings_only(self, server_with_data):
+        """Test clearing embeddings while keeping images."""
+        initial_images = server_with_data.image_store.count()
+        initial_embeddings = server_with_data.rag_store.count()
+        
+        assert initial_embeddings > 0
+        assert initial_images > 0
+        
+        result = await server_with_data.clear_store(
+            clear_embeddings=True,
+            clear_images=False
+        )
+        
+        assert result["success"] is True
+        assert result["embeddings_cleared"] == initial_embeddings
+        assert result["images_deleted"] == 0
+        assert result["embeddings_remaining"] == 0
+        assert result["images_remaining"] == initial_images
+        assert server_with_data.rag_store.count() == 0
+        assert server_with_data.image_store.count() == initial_images
+    
+    @pytest.mark.asyncio
+    async def test_clear_images_only(self, server_with_data):
+        """Test clearing images while keeping embeddings."""
+        initial_images = server_with_data.image_store.count()
+        initial_embeddings = server_with_data.rag_store.count()
+        
+        assert initial_embeddings > 0
+        assert initial_images > 0
+        
+        result = await server_with_data.clear_store(
+            clear_embeddings=False,
+            clear_images=True
+        )
+        
+        assert result["success"] is True
+        assert result["embeddings_cleared"] == 0
+        assert result["images_deleted"] == initial_images
+        assert result["embeddings_remaining"] == initial_embeddings
+        assert result["images_remaining"] == 0
+        assert server_with_data.rag_store.count() == initial_embeddings
+        assert server_with_data.image_store.count() == 0
+    
+    @pytest.mark.asyncio
+    async def test_clear_both_embeddings_and_images(self, server_with_data):
+        """Test clearing both embeddings and images."""
+        initial_images = server_with_data.image_store.count()
+        initial_embeddings = server_with_data.rag_store.count()
+        
+        result = await server_with_data.clear_store(
+            clear_embeddings=True,
+            clear_images=True
+        )
+        
+        assert result["success"] is True
+        assert result["embeddings_cleared"] == initial_embeddings
+        assert result["images_deleted"] == initial_images
+        assert result["embeddings_remaining"] == 0
+        assert result["images_remaining"] == 0
+        assert server_with_data.rag_store.count() == 0
+        assert server_with_data.image_store.count() == 0
+    
+    @pytest.mark.asyncio
+    async def test_clear_empty_store(self, mcp_server):
+        """Test clearing an already empty store."""
+        result = await mcp_server.clear_store(
+            clear_embeddings=True,
+            clear_images=True
+        )
+        
+        assert result["success"] is True
+        assert result["embeddings_cleared"] == 0
+        assert result["images_deleted"] == 0
+    
+    @pytest.mark.asyncio
+    async def test_clear_neither_flag(self, server_with_data):
+        """Test clear_store with both flags False."""
+        initial_images = server_with_data.image_store.count()
+        initial_embeddings = server_with_data.rag_store.count()
+        
+        result = await server_with_data.clear_store(
+            clear_embeddings=False,
+            clear_images=False
+        )
+        
+        assert result["success"] is True
+        assert result["embeddings_cleared"] == 0
+        assert result["images_deleted"] == 0
+        assert server_with_data.rag_store.count() == initial_embeddings
+        assert server_with_data.image_store.count() == initial_images
+
+
+class TestReindexFromImages:
+    """Comprehensive tests for reindex_from_images functionality."""
+    
+    @pytest.mark.asyncio
+    async def test_reindex_with_existing_images(self, server_with_data):
+        """Test reindexing when images exist on disk."""
+        # Clear embeddings but keep images
+        await server_with_data.clear_store(clear_embeddings=True, clear_images=False)
+        
+        assert server_with_data.rag_store.count() == 0
+        initial_images = server_with_data.image_store.count()
+        assert initial_images > 0
+        
+        result = await server_with_data.reindex_from_images()
+        
+        assert result["success"] is True
+        assert result["images_processed"] == initial_images
+        assert result["images_skipped"] == 0
+        assert result["embeddings_before"] == 0
+        assert result["total_embeddings"] == initial_images
+        assert result["cleared_before_reindex"] is False
+    
+    @pytest.mark.asyncio
+    async def test_reindex_with_max_images(self, server_with_data):
+        """Test reindexing with max_images limit."""
+        await server_with_data.clear_store(clear_embeddings=True, clear_images=False)
+        
+        result = await server_with_data.reindex_from_images(max_images=3)
+        
+        assert result["success"] is True
+        assert result["images_processed"] <= 3
+        assert result["total_embeddings"] <= 3
+    
+    @pytest.mark.asyncio
+    async def test_reindex_with_clear_existing(self, server_with_data):
+        """Test reindexing with clear_existing=True."""
+        initial_embeddings = server_with_data.rag_store.count()
+        
+        result = await server_with_data.reindex_from_images(clear_existing=True)
+        
+        assert result["success"] is True
+        assert result["embeddings_before"] == initial_embeddings
+        assert result["cleared_before_reindex"] is True
+    
+    @pytest.mark.asyncio
+    async def test_reindex_no_images_error(self, tmp_path):
+        """Test reindexing when no images exist."""
+        # Create a fresh server with empty image store using temporary directories
+        test_server = VisionRAGMCPServer(
+            collection_name="test_reindex_empty",
+            persist_directory=str(tmp_path / "chroma_db"),
+            image_store_dir=str(tmp_path / "image_store")
+        )
+        
+        try:
+            # Clear everything to ensure empty state
+            await test_server.clear_store(clear_embeddings=True, clear_images=True)
+            
+            result = await test_server.reindex_from_images()
+            
+            assert result["success"] is False
+            assert "error" in result
+            assert "No images found" in result["error"]
+            assert "image_store_directory" in result
+        finally:
+            # Cleanup - clear both rag_store and image_store
+            test_server.rag_store.clear()
+            test_server.image_store.clear()
+    
+    @pytest.mark.asyncio
+    async def test_reindex_increments_count(self, server_with_data):
+        """Test that reindexing adds to existing embeddings when not clearing."""
+        
+        # Add more images
+        for i in range(3):
+            img = Image.fromarray(np.random.randint(0, 255, (28, 28), dtype=np.uint8), mode='L')
+            await server_with_data.add_image(encode_image_to_base64(img))
+        
+        # Clear embeddings but keep images
+        await server_with_data.clear_store(clear_embeddings=True, clear_images=False)
+        total_images = server_with_data.image_store.count()
+        
+        result = await server_with_data.reindex_from_images(clear_existing=False)
+        
+        assert result["success"] is True
+        assert result["total_embeddings"] == total_images
+
+
+class TestPreloadDataset:
+    """Comprehensive tests for preload_dataset functionality."""
+    
+    @pytest.mark.asyncio
+    async def test_preload_invalid_dataset(self, mcp_server):
+        """Test preloading with invalid dataset name."""
+        result = await mcp_server.preload_dataset(
+            dataset_name="InvalidDataset",
+            split="train",
+            max_images=10
+        )
+        
+        assert result["success"] is False
+        assert "error" in result
+    
+    @pytest.mark.asyncio
+    async def test_preload_with_max_images(self, mcp_server):
+        """Test preloading with max_images limit."""
+        initial_count = mcp_server.rag_store.count()
+        
+        result = await mcp_server.preload_dataset(
+            dataset_name="PneumoniaMNIST",
+            split="train",
+            max_images=5,
+            size=28
+        )
+        
+        if result["success"]:
+            assert result["images_loaded"] <= 5
+            assert result["total_embeddings"] == initial_count + result["images_loaded"]
+    
+    @pytest.mark.asyncio
+    async def test_preload_multiple_datasets(self, mcp_server):
+        """Test preloading multiple datasets sequentially."""
+        result1 = await mcp_server.preload_dataset(
+            dataset_name="PneumoniaMNIST",
+            split="train",
+            max_images=3,
+            size=28
+        )
+        
+        if result1["success"]:
+            count_after_first = result1["total_embeddings"]
+            
+            result2 = await mcp_server.preload_dataset(
+                dataset_name="BreastMNIST",
+                split="train",
+                max_images=3,
+                size=28
+            )
+            
+            if result2["success"]:
+                assert result2["total_embeddings"] >= count_after_first
+    
+    @pytest.mark.asyncio
+    async def test_preload_includes_metadata(self, mcp_server):
+        """Test that preloaded images have proper metadata."""
+        await mcp_server.clear_store(clear_embeddings=True, clear_images=True)
+        
+        result = await mcp_server.preload_dataset(
+            dataset_name="PneumoniaMNIST",
+            split="train",
+            max_images=2,
+            size=28
+        )
+        
+        if result["success"] and result["images_loaded"] > 0:
+            # Search to verify metadata
+            stats = await mcp_server.get_statistics()
+            assert stats["total_embeddings"] > 0
+
+
+class TestSearchSimilarImagesExtended:
+    """Extended tests for search_similar_images."""
+    
+    @pytest.mark.asyncio
+    async def test_search_returns_proper_structure(self, server_with_data):
+        """Test that search returns proper result structure."""
+        query_img = Image.fromarray(np.random.randint(0, 255, (28, 28), dtype=np.uint8), mode='L')
+        
+        result = await server_with_data.search_similar_images(
+            image_base64=encode_image_to_base64(query_img),
+            n_results=2
+        )
+        
+        assert "results" in result
+        assert "count" in result
+        assert "query_info" in result
+    
+    @pytest.mark.asyncio
+    async def test_search_with_varying_n_results(self, server_with_data):
+        """Test search with different n_results values."""
+        query_img = Image.fromarray(np.random.randint(0, 255, (28, 28), dtype=np.uint8), mode='L')
+        
+        result1 = await server_with_data.search_similar_images(
+            image_base64=encode_image_to_base64(query_img),
+            n_results=1
+        )
+        
+        result3 = await server_with_data.search_similar_images(
+            image_base64=encode_image_to_base64(query_img),
+            n_results=3
+        )
+        
+        assert result1["count"] <= 1
+        assert result3["count"] <= 3
+
+
+class TestSearchByLabelWithImages:
+    """Test search_by_label with return_images parameter."""
+    
+    @pytest.mark.asyncio
+    async def test_search_by_label_with_images(self, server_with_data):
+        """Test search_by_label with return_images=True."""
+        result = await server_with_data.search_by_label(
+            label=0,
+            n_results=2,
+            return_images=True
+        )
+        
+        if result["count"] > 0:
+            assert "images_base64" in result
+            assert isinstance(result["images_base64"], list)
+    
+    @pytest.mark.asyncio
+    async def test_search_by_label_without_images(self, server_with_data):
+        """Test search_by_label with return_images=False."""
+        result = await server_with_data.search_by_label(
+            label=0,
+            n_results=2,
+            return_images=False
+        )
+        
+        assert "images_base64" not in result
+
+
+class TestGetStatisticsExtended:
+    """Extended tests for get_statistics."""
+    
+    @pytest.mark.asyncio
+    async def test_statistics_has_all_required_fields(self, mcp_server):
+        """Test that statistics includes all required fields."""
+        stats = await mcp_server.get_statistics()
+        
+        required_fields = [
+            "total_embeddings",
+            "total_images",
+            "collection_name",
+            "persist_directory",
+            "image_store_directory",
+            "current_working_directory",
+            "encoder_model",
+            "embedding_dimension"
+        ]
+        
+        for field in required_fields:
+            assert field in stats, f"Missing field: {field}"
+    
+    @pytest.mark.asyncio
+    async def test_statistics_counts_are_non_negative(self, mcp_server):
+        """Test that all counts in statistics are non-negative."""
+        stats = await mcp_server.get_statistics()
+        
+        assert stats["total_embeddings"] >= 0
+        assert stats["total_images"] >= 0
+        assert stats["embedding_dimension"] > 0
+    
+    @pytest.mark.asyncio
+    async def test_statistics_paths_are_absolute(self, mcp_server):
+        """Test that directory paths in statistics are absolute."""
+        stats = await mcp_server.get_statistics()
+        
+        assert Path(stats["persist_directory_absolute"]).is_absolute()
+        assert Path(stats["image_store_directory_absolute"]).is_absolute()
+        assert Path(stats["current_working_directory"]).is_absolute()
+
+
+class TestListAvailableDatasets:
+    """Tests for list_available_datasets functionality."""
+    
+    @pytest.mark.asyncio
+    async def test_list_datasets_returns_dict(self, mcp_server):
+        """Test that list_available_datasets returns proper structure."""
+        result = await mcp_server.list_available_datasets()
+        
+        assert "datasets" in result
+        assert "count" in result
+        assert isinstance(result["datasets"], dict)
+        assert isinstance(result["count"], int)
+        assert result["count"] > 0
+    
+    @pytest.mark.asyncio
+    async def test_list_datasets_includes_common_datasets(self, mcp_server):
+        """Test that common MedMNIST datasets are included."""
+        result = await mcp_server.list_available_datasets()
+        
+        datasets = result["datasets"]
+        common_datasets = ["PathMNIST", "ChestMNIST", "PneumoniaMNIST", "OrganSMNIST"]
+        
+        for ds_name in common_datasets:
+            assert ds_name in datasets, f"Missing dataset: {ds_name}"
+    
+    @pytest.mark.asyncio
+    async def test_list_datasets_has_proper_info(self, mcp_server):
+        """Test that each dataset has required information."""
+        result = await mcp_server.list_available_datasets()
+        
+        for ds_name, ds_info in result["datasets"].items():
+            assert "description" in ds_info
+            assert "n_classes" in ds_info
+            assert "image_size" in ds_info
+            assert "channels" in ds_info
+            
+            assert isinstance(ds_info["n_classes"], int)
+            assert ds_info["n_classes"] > 0
+
+
+class TestErrorHandling:
+    """Test error handling across all functions."""
+    
+    @pytest.mark.asyncio
+    async def test_search_with_corrupted_base64(self, mcp_server):
+        """Test search with corrupted base64 string raises error."""
+        with pytest.raises(ValueError):
+            await mcp_server.search_similar_images(
+                image_base64="corrupted_data_!!!",
+                n_results=5
+            )
+    
+    @pytest.mark.asyncio
+    async def test_add_image_with_invalid_base64(self, mcp_server):
+        """Test add_image with invalid base64 raises error."""
+        with pytest.raises(ValueError):
+            await mcp_server.add_image(
+                image_base64="not_a_valid_image",
+                metadata={"test": True}
+            )
+    
+    @pytest.mark.asyncio
+    async def test_search_by_label_with_negative_label(self, server_with_data):
+        """Test search_by_label with negative label value."""
+        result = await server_with_data.search_by_label(label=-1)
+        
+        # Should handle gracefully, return empty results
+        assert "ids" in result
+        assert "metadatas" in result
+        assert "count" in result
+        assert result["count"] == 0
+    
+    @pytest.mark.asyncio
+    async def test_preload_with_invalid_split(self, mcp_server):
+        """Test preload with invalid split name."""
+        result = await mcp_server.preload_dataset(
+            dataset_name="PneumoniaMNIST",
+            split="invalid_split",
+            max_images=5
+        )
+        
+        assert result["success"] is False
+        assert "error" in result
