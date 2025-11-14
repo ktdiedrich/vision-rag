@@ -86,8 +86,19 @@ def main():
     print(f"Added {len(train_subset)} images to RAG store")
     print(f"Saved {image_store.count()} images to disk")
     
-    # 3. VISUALIZE SEARCH INPUT IMAGES
-    print("\n🔍 Step 3: Visualizing search query images...")
+    # 3. VISUALIZE EMBEDDING SPACE WITH T-SNE
+    print("\n🌌 Step 3: Visualizing embedding space with t-SNE...")
+    embedding_labels = [label for _, label in train_subset]
+    embedding_viz_path = visualizer.save_embedding_space_visualization(
+        embeddings=train_embeddings,
+        labels=embedding_labels,
+        method='tsne',
+        filename="embedding_space_tsne.png"
+    )
+    print(f"✅ Saved: {embedding_viz_path}")
+    
+    # 4. VISUALIZE SEARCH INPUT IMAGES
+    print("\n🔍 Step 4: Visualizing search query images...")
     query_images = [get_image_from_array(img) for img, _ in test_subset]
     query_labels = [label for _, label in test_subset]
     
@@ -99,8 +110,8 @@ def main():
     )
     print(f"✅ Saved: {search_input_path}")
     
-    # 4. PERFORM SEARCHES AND VISUALIZE RESULTS
-    print("\n🎯 Step 4: Performing searches and visualizing results...")
+    # 5. PERFORM SEARCHES AND VISUALIZE RESULTS
+    print("\n🎯 Step 5: Performing searches and visualizing results...")
 
     for i, (query_img, query_label) in enumerate(zip(query_images, query_labels)):
         query_name = get_human_readable_label(query_label)
