@@ -22,12 +22,15 @@ from .rag_store import ChromaRAGStore
 from .search import ImageSearcher
 from .data_loader import (
     get_human_readable_label,
+    get_medmnist_label_names,
     load_medmnist_data,
     get_image_from_array,
 )
 from .utils import decode_base64_image, encode_image_to_base64
 from .image_store import ImageFileStore
 from PIL import Image
+import numpy as np
+from .visualization import RAGVisualizer
 
 
 class VisionRAGMCPServer:
@@ -272,8 +275,6 @@ class VisionRAGMCPServer:
         Returns:
             Mapping of label IDs to human-readable names
         """
-        from .data_loader import get_medmnist_label_names
-        
         label_names = get_medmnist_label_names(dataset_name="OrganSMNIST")
         
         return {
@@ -620,9 +621,6 @@ class VisionRAGMCPServer:
             Status and path to the generated plot
         """
         try:
-            from .visualization import RAGVisualizer
-            import numpy as np
-            
             print(f"📊 Generating {method.upper()} visualization...", file=sys.stderr)
             
             # Get all embeddings and metadata

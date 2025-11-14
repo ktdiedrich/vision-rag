@@ -3,8 +3,12 @@
 from typing import List, Optional, Dict, Any
 import io
 import threading
+import traceback
+import uvicorn
 from contextlib import asynccontextmanager
+from pathlib import Path
 
+import numpy as np
 from fastapi import FastAPI, HTTPException, UploadFile, File
 from pydantic import BaseModel, Field
 from PIL import Image
@@ -28,6 +32,7 @@ from .data_loader import (
 )
 from .utils import decode_base64_image
 from .image_store import ImageFileStore
+from .visualization import RAGVisualizer
 
 
 # Pydantic models for API requests/responses
@@ -701,9 +706,6 @@ async def generate_tsne_plot(request: TsnePlotRequest):
     Returns:
         Status and path to the generated visualization
     """
-    from .visualization import RAGVisualizer
-    import numpy as np
-    
     if rag_store is None:
         raise HTTPException(status_code=503, detail="Service not initialized")
     
@@ -756,7 +758,6 @@ async def generate_tsne_plot(request: TsnePlotRequest):
         )
         
     except Exception as e:
-        import traceback
         traceback.print_exc()  # Print full traceback for debugging
         return TsnePlotResponse(
             success=False,
@@ -781,8 +782,6 @@ async def reindex_from_images(request: ReindexRequest):
     Returns:
         Status and statistics of the reindex operation
     """
-    from pathlib import Path
-    
     if encoder is None or rag_store is None or image_store is None:
         raise HTTPException(status_code=503, detail="Service not initialized")
     
@@ -888,5 +887,4 @@ async def reindex_from_images(request: ReindexRequest):
 
 
 if __name__ == "__main__":
-    import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8001)
