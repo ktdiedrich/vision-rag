@@ -6,6 +6,7 @@ import threading
 import traceback
 import uvicorn
 from contextlib import asynccontextmanager
+import json
 
 import numpy as np
 from fastapi import FastAPI, HTTPException, UploadFile, File
@@ -281,6 +282,7 @@ async def get_available_labels():
             detail=f"Dataset not found: {str(e)}"
         )
     except Exception as e:
+        traceback.print_exc()
         raise HTTPException(
             status_code=500,
             detail=f"Failed to retrieve labels: {str(e)}"
@@ -393,7 +395,6 @@ async def preload_dataset(request: PreloadRequest):
                 if hasattr(label_value, '__len__') and not isinstance(label_value, str):
                     # Multi-dimensional label (e.g., multi-label classification)
                     # Convert to JSON string since ChromaDB doesn't support list metadata
-                    import json
                     label_list = label_value.tolist() if hasattr(label_value, 'tolist') else list(label_value)
                     label_value = json.dumps(label_list)
                 else:
@@ -437,6 +438,7 @@ async def preload_dataset(request: PreloadRequest):
             detail=f"Dataset file not found: {str(e)}"
         )
     except Exception as e:
+        traceback.print_exc()
         raise HTTPException(
             status_code=500,
             detail=f"Error preloading dataset: {str(e)}"
@@ -525,6 +527,7 @@ async def search_similar_images(request: SearchRequest):
         )
         
     except Exception as e:
+        traceback.print_exc()
         raise HTTPException(status_code=400, detail=f"Error processing image: {str(e)}")
 
 
@@ -574,6 +577,7 @@ async def search_by_label(request: SearchByLabelRequest):
         )
         
     except Exception as e:
+        traceback.print_exc()
         raise HTTPException(status_code=400, detail=f"Error searching by label: {str(e)}")
 
 
@@ -628,6 +632,7 @@ async def add_image(request: AddImageRequest):
         }
         
     except Exception as e:
+        traceback.print_exc()
         raise HTTPException(status_code=400, detail=f"Error adding image: {str(e)}")
 
 
@@ -688,6 +693,7 @@ async def add_images_batch(files: List[UploadFile] = File(...)):
         }
         
     except Exception as e:
+        traceback.print_exc()
         raise HTTPException(status_code=400, detail=f"Error adding images: {str(e)}")
 
 
@@ -757,7 +763,7 @@ async def generate_tsne_plot(request: TsnePlotRequest):
         )
         
     except Exception as e:
-        traceback.print_exc()  # Print full traceback for debugging
+        traceback.print_exc()
         return TsnePlotResponse(
             success=False,
             total_embeddings=rag_store.count(),
@@ -821,7 +827,7 @@ async def reindex_from_images(request: ReindexRequest):
                 pil_images.append(img)
                 valid_paths.append(str(img_path))
             except Exception as e:
-                continue
+                traceback.print_exc(); continue
         
         if not pil_images:
             return ReindexResponse(
@@ -873,6 +879,7 @@ async def reindex_from_images(request: ReindexRequest):
         )
         
     except Exception as e:
+        traceback.print_exc()
         return ReindexResponse(
             success=False,
             images_processed=0,
