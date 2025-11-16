@@ -64,7 +64,7 @@ class TestMCPServerInitialization:
         assert mcp_server.encoder is not None
         assert mcp_server.rag_store is not None
         assert mcp_server.searcher is not None
-        assert len(mcp_server.tools) == 9
+        assert len(mcp_server.tools) == 10
         
         # Check all expected tools are registered
         expected_tools = [
@@ -73,6 +73,7 @@ class TestMCPServerInitialization:
             "add_image",
             "get_statistics",
             "list_available_labels",
+            "generate_tsne_plot",
         ]
         for tool in expected_tools:
             assert tool in mcp_server.tools
@@ -557,7 +558,7 @@ class TestGetToolDefinitions:
         definitions = mcp_server.get_tool_definitions()
         
         assert isinstance(definitions, list)
-        assert len(definitions) == 9
+        assert len(definitions) == 10
         
         # Check structure of each definition
         for tool_def in definitions:
@@ -1089,6 +1090,7 @@ class TestToolsRegistration:
             "preload_dataset",
             "clear_store",
             "reindex_from_images",
+            "generate_tsne_plot",
         }
         
         assert set(mcp_server.tools.keys()) == expected_tools
@@ -1112,7 +1114,7 @@ class TestHandleToolCallEdgeCases:
         
         assert "error" in result
         assert "available_tools" in result
-        assert len(result["available_tools"]) == 9
+        assert len(result["available_tools"]) == 10
     
     @pytest.mark.asyncio
     async def test_handle_tool_call_exception_handling(self, mcp_server):
@@ -1230,7 +1232,7 @@ class TestServerInitializationEdgeCases:
         assert server.rag_store is not None
         assert server.image_store is not None
         assert server.searcher is not None
-        assert len(server.tools) == 9
+        assert len(server.tools) == 10
     
     @pytest.mark.asyncio
     async def test_server_encoder_dimension_accessible(self, mcp_server):
@@ -1417,7 +1419,7 @@ class TestToolCallResultFormat:
         assert "error" in result
         assert "available_tools" in result
         assert isinstance(result["available_tools"], list)
-        assert len(result["available_tools"]) == 9
+        assert len(result["available_tools"]) == 10
 
 
 class TestClearStore:
