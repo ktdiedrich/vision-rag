@@ -3,8 +3,12 @@
 from typing import List, Optional, Dict, Any
 import io
 import threading
+import traceback
+import uvicorn
 from contextlib import asynccontextmanager
+import json
 
+import numpy as np
 from fastapi import FastAPI, HTTPException, UploadFile, File
 from pydantic import BaseModel, Field
 from PIL import Image
@@ -28,6 +32,7 @@ from .data_loader import (
 )
 from .utils import decode_base64_image
 from .image_store import ImageFileStore
+from .visualization import RAGVisualizer
 
 
 # Pydantic models for API requests/responses
@@ -119,6 +124,42 @@ class PreloadResponse(BaseModel):
     images_loaded: int
     total_embeddings: int
     message: str
+
+
+class TsnePlotRequest(BaseModel):
+    """Request model for generating t-SNE plot."""
+    output_filename: str = Field("tsne_visualization.png", description="Filename for the generated plot")
+    method: str = Field("tsne", description="Dimensionality reduction method: 'tsne', 'pca', or 'umap'")
+    title: str = Field("RAG Store Embedding Space Visualization", description="Title for the visualization")
+
+
+class TsnePlotResponse(BaseModel):
+    """Response model for t-SNE plot generation."""
+    success: bool
+    output_path: Optional[str] = None
+    total_embeddings: int
+    method: str
+    unique_labels: Optional[int] = None
+    message: str
+    error: Optional[str] = None
+
+
+class ReindexRequest(BaseModel):
+    """Request model for reindexing from image store."""
+    max_images: Optional[int] = Field(None, description="Optional limit on number of images to process")
+    clear_existing: bool = Field(False, description="If True, clear existing embeddings before reindexing")
+
+
+class ReindexResponse(BaseModel):
+    """Response model for reindex operation."""
+    success: bool
+    images_processed: int
+    images_skipped: int
+    embeddings_before: int
+    total_embeddings: int
+    cleared_before_reindex: bool
+    message: str
+    error: Optional[str] = None
 
 
 # Global state (initialized on startup)
@@ -241,6 +282,7 @@ async def get_available_labels():
             detail=f"Dataset not found: {str(e)}"
         )
     except Exception as e:
+        traceback.print_exc()
         raise HTTPException(
             status_code=500,
             detail=f"Failed to retrieve labels: {str(e)}"
@@ -353,7 +395,6 @@ async def preload_dataset(request: PreloadRequest):
                 if hasattr(label_value, '__len__') and not isinstance(label_value, str):
                     # Multi-dimensional label (e.g., multi-label classification)
                     # Convert to JSON string since ChromaDB doesn't support list metadata
-                    import json
                     label_list = label_value.tolist() if hasattr(label_value, 'tolist') else list(label_value)
                     label_value = json.dumps(label_list)
                 else:
@@ -397,6 +438,7 @@ async def preload_dataset(request: PreloadRequest):
             detail=f"Dataset file not found: {str(e)}"
         )
     except Exception as e:
+        traceback.print_exc()
         raise HTTPException(
             status_code=500,
             detail=f"Error preloading dataset: {str(e)}"
@@ -485,6 +527,7 @@ async def search_similar_images(request: SearchRequest):
         )
         
     except Exception as e:
+        traceback.print_exc()
         raise HTTPException(status_code=400, detail=f"Error processing image: {str(e)}")
 
 
@@ -534,6 +577,7 @@ async def search_by_label(request: SearchByLabelRequest):
         )
         
     except Exception as e:
+        traceback.print_exc()
         raise HTTPException(status_code=400, detail=f"Error searching by label: {str(e)}")
 
 
@@ -588,6 +632,7 @@ async def add_image(request: AddImageRequest):
         }
         
     except Exception as e:
+        traceback.print_exc()
         raise HTTPException(status_code=400, detail=f"Error adding image: {str(e)}")
 
 
@@ -648,9 +693,204 @@ async def add_images_batch(files: List[UploadFile] = File(...)):
         }
         
     except Exception as e:
+        traceback.print_exc()
         raise HTTPException(status_code=400, detail=f"Error adding images: {str(e)}")
 
 
+@app.post("/visualize/tsne", response_model=TsnePlotResponse)
+async def generate_tsne_plot(request: TsnePlotRequest):
+    """
+    Generate a t-SNE visualization of all embeddings in the RAG store.
+    
+    Creates a 2D scatter plot showing how images cluster in the embedding space.
+    The plot is saved to the current directory and the path is returned.
+    
+    Args:
+        request: Request with output filename, method, and title
+        
+    Returns:
+        Status and path to the generated visualization
+    """
+    if rag_store is None:
+        raise HTTPException(status_code=503, detail="Service not initialized")
+    
+    try:
+        # Get all embeddings and metadata
+        all_data = rag_store.get_all_embeddings()
+        
+        if len(all_data.get("embeddings", [])) == 0:
+            return TsnePlotResponse(
+                success=False,
+                total_embeddings=0,
+                method=request.method,
+                message="No embeddings found in RAG store. Please add images first.",
+                error="No embeddings available",
+            )
+        
+        # Convert embeddings to numpy array
+        embeddings = np.array(all_data["embeddings"])
+        
+        # Extract labels from metadata
+        labels = []
+        for meta in all_data["metadatas"]:
+            # Try to get label from metadata, default to 0 if not found
+            label = meta.get("label", meta.get("index", 0))
+            # Convert to int, handling various types
+            try:
+                if isinstance(label, (list, tuple, np.ndarray)):
+                    label = label[0] if len(label) > 0 else 0
+                labels.append(int(label))
+            except (ValueError, TypeError):
+                labels.append(0)
+        
+        # Create visualizer and generate plot
+        visualizer = RAGVisualizer(output_dir="./")
+        output_path = visualizer.save_embedding_space_visualization(
+            embeddings=embeddings,
+            labels=labels,
+            method=request.method,
+            filename=request.output_filename,
+            title=request.title,
+        )
+        
+        return TsnePlotResponse(
+            success=True,
+            output_path=output_path,
+            total_embeddings=len(embeddings),
+            method=request.method,
+            unique_labels=len(set(labels)),
+            message=f"Successfully generated {request.method.upper()} plot with {len(embeddings)} embeddings",
+        )
+        
+    except Exception as e:
+        traceback.print_exc()
+        return TsnePlotResponse(
+            success=False,
+            total_embeddings=rag_store.count(),
+            method=request.method,
+            message="Failed to generate visualization",
+            error=str(e),
+        )
+
+
+@app.post("/reindex", response_model=ReindexResponse)
+async def reindex_from_images(request: ReindexRequest):
+    """
+    Re-encode all images from the image store and rebuild embeddings.
+    
+    This is useful when you have images on disk but no embeddings in ChromaDB,
+    or when you want to rebuild the index with a different encoder.
+    
+    Args:
+        request: Request with max_images limit and clear_existing flag
+        
+    Returns:
+        Status and statistics of the reindex operation
+    """
+    if encoder is None or rag_store is None or image_store is None:
+        raise HTTPException(status_code=503, detail="Service not initialized")
+    
+    try:
+        # Get all image files
+        image_files = list(image_store.storage_dir.glob("*.png")) + \
+                     list(image_store.storage_dir.glob("*.jpg"))
+        
+        if not image_files:
+            return ReindexResponse(
+                success=False,
+                images_processed=0,
+                images_skipped=0,
+                embeddings_before=rag_store.count(),
+                total_embeddings=rag_store.count(),
+                cleared_before_reindex=False,
+                message="No images found in image store",
+                error=f"No images found in {image_store.storage_dir}",
+            )
+        
+        # Limit if specified
+        total_found = len(image_files)
+        if request.max_images is not None and request.max_images < len(image_files):
+            image_files = image_files[:request.max_images]
+        
+        # Clear existing embeddings if requested
+        embeddings_before = rag_store.count()
+        if request.clear_existing:
+            rag_store.clear()
+        
+        # Load and encode images
+        pil_images = []
+        valid_paths = []
+        
+        for img_path in image_files:
+            try:
+                img = Image.open(img_path)
+                pil_images.append(img)
+                valid_paths.append(str(img_path))
+            except Exception as e:
+                traceback.print_exc(); continue
+        
+        if not pil_images:
+            return ReindexResponse(
+                success=False,
+                images_processed=0,
+                images_skipped=len(image_files),
+                embeddings_before=embeddings_before,
+                total_embeddings=rag_store.count(),
+                cleared_before_reindex=request.clear_existing,
+                message="No valid images could be loaded",
+                error="All images failed to load",
+            )
+        
+        # Encode all images
+        embeddings = encoder.encode_images(pil_images)
+        
+        # Use lock for thread-safe ID generation and storage
+        with _id_generation_lock:
+            current_count = rag_store.count()
+            ids = [f"reindexed_{current_count + i}" for i in range(len(pil_images))]
+            
+            metadatas = [
+                {
+                    "image_path": valid_paths[i],
+                    "index": current_count + i,
+                    "reindexed": True,
+                }
+                for i in range(len(pil_images))
+            ]
+            
+            # Add to RAG store
+            rag_store.add_embeddings(
+                embeddings=embeddings,
+                ids=ids,
+                metadatas=metadatas,
+            )
+        
+        total_embeddings = rag_store.count()
+        images_skipped = len(image_files) - len(pil_images)
+        
+        return ReindexResponse(
+            success=True,
+            images_processed=len(pil_images),
+            images_skipped=images_skipped,
+            embeddings_before=embeddings_before,
+            total_embeddings=total_embeddings,
+            cleared_before_reindex=request.clear_existing,
+            message=f"Successfully reindexed {len(pil_images)} images from {total_found} found",
+        )
+        
+    except Exception as e:
+        traceback.print_exc()
+        return ReindexResponse(
+            success=False,
+            images_processed=0,
+            images_skipped=0,
+            embeddings_before=rag_store.count() if rag_store else 0,
+            total_embeddings=rag_store.count() if rag_store else 0,
+            cleared_before_reindex=request.clear_existing,
+            message="Failed to reindex images",
+            error=str(e),
+        )
+
+
 if __name__ == "__main__":
-    import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8001)

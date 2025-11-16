@@ -8,7 +8,7 @@ This directory contains demonstration scripts that showcase the vision RAG syste
 A quick demonstration that shows the core functionality:
 
 - Uses 50 training images for fast execution
-- Creates 5 visualization files
+- Creates 6 visualization files including t-SNE embedding plot
 - Perfect for understanding basic concepts
 
 **Run:**
@@ -18,8 +18,9 @@ uv run python simple_visualization_example.py
 
 **Output:** Creates `output/simple_visualizations/` directory with:
 - `input_to_rag_store.png` - Sample training images
+- `embedding_space_tsne.png` - t-SNE visualization of embeddings
 - `search_query_images.png` - Query images for search
-- `search_results_1-3.png` - Search results with similarities
+- `search_results_1-5.png` - Search results with similarities
 
 ### 2. `demo_with_visualization.py`
 Comprehensive demonstration with full analysis:

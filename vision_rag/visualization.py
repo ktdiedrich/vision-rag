@@ -7,6 +7,8 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from PIL import Image
 import pandas as pd
+from sklearn.manifold import TSNE
+from sklearn.decomposition import PCA
 
 from .data_loader import get_human_readable_label
 
@@ -306,9 +308,6 @@ class RAGVisualizer:
         Returns:
             Path to saved image
         """
-        from sklearn.manifold import TSNE
-        from sklearn.decomposition import PCA
-        
         # Perform dimensionality reduction
         if method == 'tsne':
             # Adjust perplexity for small datasets

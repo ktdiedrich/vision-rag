@@ -77,7 +77,7 @@ def main():
     
     # Step 6: Search with test images
     print("\n[6/6] Searching with test images...")
-    test_images, test_labels = load_organmnist_data(split="test", root="./data")
+    test_images, test_labels = load_medmnist_data(dataset_name="OrganSMNIST", split="test", root="./data")
     print(f"✓ Loaded {len(test_images)} test images")
     
     # Create searcher
