@@ -514,10 +514,30 @@ uv run uvicorn vision_rag.service:app --host 0.0.0.0 --port 8001
 - `POST /search/label` - Search by label (uses configured dataset's labels)
 - `POST /add` - Add a single image
 - `POST /add/batch` - Add multiple images
+- `POST /visualize/tsne` - Generate t-SNE/PCA/UMAP visualization of embeddings
+- `POST /reindex` - Re-encode images from image store and rebuild embeddings
 - `DELETE /clear` - Clear all embeddings
 
 **API Documentation:**
 Once running, visit `http://localhost:8001/docs` for interactive Swagger UI documentation.
+
+**Embedding Visualization:**
+
+Generate 2D visualizations of your RAG store embeddings to understand how images cluster:
+
+```bash
+# Generate t-SNE plot
+curl -X POST http://localhost:8001/visualize/tsne \
+  -H "Content-Type: application/json" \
+  -d '{"output_filename": "tsne.png", "method": "tsne"}'
+
+# Generate PCA plot (faster)
+curl -X POST http://localhost:8001/visualize/tsne \
+  -H "Content-Type: application/json" \
+  -d '{"output_filename": "pca.png", "method": "pca"}'
+```
+
+See [docs/TSNE_VISUALIZATION.md](docs/TSNE_VISUALIZATION.md) for complete documentation.
 
 ### 2. MCP Agent Server
 
@@ -536,6 +556,24 @@ VISION_RAG_DATASET="DermaMNIST" python scripts/run_service.py --mode mcp
 - `add_image` - Add a medical image to the RAG store
 - `get_statistics` - Get RAG store statistics
 - `list_available_labels` - List all available labels for the configured dataset
+- `list_available_datasets` - List all available MedMNIST datasets
+- `preload_dataset` - Preload a MedMNIST dataset into the RAG store
+- `clear_store` - Clear embeddings and/or images from the RAG store
+- `reindex_from_images` - Re-encode images and rebuild embeddings
+- `generate_tsne_plot` - Generate t-SNE/PCA/UMAP visualization of embeddings
+
+**Embedding Visualization (MCP):**
+
+```python
+# Generate visualization using MCP tool
+result = await server.generate_tsne_plot(
+    output_filename="embeddings_tsne.png",
+    method="tsne",
+    title="My RAG Store Visualization"
+)
+```
+
+See [docs/TSNE_VISUALIZATION.md](docs/TSNE_VISUALIZATION.md) and `examples/tsne_visualization_demo.py` for details.
 
 ### 3. Run Both Services
 
