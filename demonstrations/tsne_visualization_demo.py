@@ -40,8 +40,8 @@ async def demo_mcp_tsne():
     if total_embeddings == 0:
         print("\n⚠️  No embeddings found in the RAG store.")
         print("   Please run a demo that adds images first, such as:")
-        print("   - examples/mcp_preload_demo.py")
-        print("   - demonstrations/simple_visualization_example.py")
+        print("   - demonstrations/mcp_preload_demo.py")
+        print("   - demonstrations/simple_visualization_demo.py")
         return
     
     print(f"\n✅ Found {total_embeddings} embeddings to visualize")

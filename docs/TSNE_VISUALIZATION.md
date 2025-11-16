@@ -303,4 +303,4 @@ The feature uses existing visualization infrastructure:
 - [RAG Visualization Module](../vision_rag/visualization.py)
 - [MCP Server Documentation](API.md)
 - [FastAPI Service Documentation](API.md)
-- [Demo Script](../examples/tsne_visualization_demo.py)
+- [Demo Script](../demonstrations/tsne_visualization_demo.py)

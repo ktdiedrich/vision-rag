@@ -223,6 +223,8 @@ demo:
 	@echo ""
 	@echo "Multi-Dataset Demo:"
 	@echo "   make demo-multi"
+	@echo "t-SNE Visualization Demo:"
+	@echo "   make demo-tsne"
 	@echo "   - Demonstrates using multiple MedMNIST datasets"
 	@echo "   - Compares PathMNIST and ChestMNIST"
 	@echo "   - Shows dataset configuration usage"
@@ -230,7 +232,7 @@ demo:
 demo-simple:
 	@echo "Running simple visualization demo..."
 	@echo "This will create visualizations in demonstrations/output/simple_visualizations/"
-	cd demonstrations && uv run python simple_visualization_example.py
+	cd demonstrations && uv run python simple_visualization_demo.py
 
 demo-full:
 	@echo "Running full visualization demo..."
@@ -241,6 +243,11 @@ demo-full:
 demo-multi:
 	@echo "Running multi-dataset demonstration..."
 	cd demonstrations && uv run python multi_dataset_demo.py
+
+demo-tsne:
+	@echo "Running t-SNE visualization demo..."
+	@echo "This will create visualizations in demonstrations/output/"
+	cd demonstrations && uv run python tsne_visualization_demo.py
 
 # Cleanup
 clean:

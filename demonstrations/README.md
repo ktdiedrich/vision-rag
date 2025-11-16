@@ -4,7 +4,7 @@ This directory contains demonstration scripts that showcase the vision RAG syste
 
 ## Scripts
 
-### 1. `simple_visualization_example.py`
+### 1. `simple_visualization_demo.py`
 A quick demonstration that shows the core functionality:
 
 - Uses 50 training images for fast execution
@@ -13,7 +13,7 @@ A quick demonstration that shows the core functionality:
 
 **Run:**
 ```bash
-uv run python simple_visualization_example.py
+uv run python simple_visualization_demo.py
 ```
 
 **Output:** Creates `output/simple_visualizations/` directory with:
