@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-Simple example showing how to use the RAG visualization functionality.
+Simple demo showing how to use the RAG visualization functionality.
 
-This script demonstrates how to:
+This demo demonstrates how to:
 1. Save sample input images going into the RAG store
 2. Save sample search query images 
 3. Save search results with retrieved images
@@ -28,17 +28,16 @@ from vision_rag import (
 
 
 def main():
-    """Run a simple visualization example."""
+    """Run a simple visualization demo."""
     
-    print("📊 Simple RAG Visualization Example")
+    print("📊 Simple RAG Visualization Demo")
     print("=" * 40)
     
     # Initialize components
     visualizer = RAGVisualizer(output_dir="./output/simple_visualizations")
     print(f"Visualizations will be saved to: {visualizer.output_dir}")
     
-    # Load small subset of data for quick example
-    # Step 1: Load data
+    # Load small subset of data for quick demo
     print("\n📥 Loading OrganSMNIST data...")
     train_images, train_labels = load_medmnist_data(dataset_name="OrganSMNIST", split="train")
     test_images, test_labels = load_medmnist_data(dataset_name="OrganSMNIST", split="test")
@@ -63,7 +62,7 @@ def main():
     # 2. SET UP RAG SYSTEM
     print("\n🧠 Step 2: Setting up RAG system...")
     encoder = CLIPImageEncoder()
-    rag_store = ChromaRAGStore(collection_name="simple_example", persist_directory="./chroma_db_simple")
+    rag_store = ChromaRAGStore(collection_name="simple_demo", persist_directory="./chroma_db_simple")
     rag_store.clear()
     
     # Initialize image store
@@ -147,7 +146,7 @@ def main():
         print(f"  Retrieved: {[f'{name} ({label})' for name, label in zip(retrieved_names, retrieved_labels)]}")
         print(f"  Distances: {distances}")
     
-    print(f"\n🎉 Example complete!")
+    print(f"\n🎉 Demo complete!")
     print(f"📁 All visualizations saved to: {visualizer.output_dir.absolute()}")
     print("\nGenerated files:")
     for viz_file in sorted(visualizer.output_dir.glob("*.png")):

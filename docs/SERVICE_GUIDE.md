@@ -147,7 +147,7 @@ result = await server.handle_tool_call("list_available_labels", {})
 
 Run the demo client:
 ```bash
-PYTHONPATH=. uv run python examples/client_demo.py
+PYTHONPATH=. uv run python examples/client_example.py
 ```
 
 Run unit tests:

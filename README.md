@@ -386,10 +386,13 @@ Run the comprehensive demonstration:
 cd demonstrations && PYTHONPATH=.. uv run python demo_with_visualization.py
 
 # Simple example
-cd demonstrations && uv run python simple_visualization_example.py
+    cd demonstrations && uv run python simple_visualization_demo.py
 
 # Multi-dataset demonstration (PathMNIST, ChestMNIST, etc.)
 cd demonstrations && PYTHONPATH=.. uv run python multi_dataset_demo.py
+
+# t-SNE visualization demo
+cd demonstrations && PYTHONPATH=.. uv run python tsne_visualization_demo.py
 ```
 
 ## Project Structure
@@ -408,11 +411,11 @@ vision-rag/
 │   └── mcp_server.py        # MCP agent server
 ├── demonstrations/
 │   ├── demo_with_visualization.py    # Comprehensive demonstration
-│   ├── simple_visualization_example.py  # Simple example
+│   ├── simple_visualization_demo.py  # Simple demo
 │   └── multi_dataset_demo.py         # Multi-dataset demonstration
 ├── examples/
 │   ├── main.py              # Main demo script
-│   └── client_demo.py       # Service client demo
+│   └── client_example.py       # Service client demo
 ├── docs/
 │   ├── DATASET_CONFIG_SUMMARY.md  # Dataset configuration guide
 │   └── SERVICE_GUIDE.md     # Service deployment guide
@@ -573,7 +576,7 @@ result = await server.generate_tsne_plot(
 )
 ```
 
-See [docs/TSNE_VISUALIZATION.md](docs/TSNE_VISUALIZATION.md) and `examples/tsne_visualization_demo.py` for details.
+See [docs/TSNE_VISUALIZATION.md](docs/TSNE_VISUALIZATION.md) and `demonstrations/tsne_visualization_demo.py` for details.
 
 ### 3. Run Both Services
 
@@ -588,7 +591,7 @@ VISION_RAG_DATASET="PathMNIST" python scripts/run_service.py --mode both --port 
 
 ### Example Client Usage
 
-See `examples/client_demo.py` for a complete example of interacting with the service:
+See `examples/client_example.py` for a complete example of interacting with the service:
 
 ```python
 import asyncio

@@ -400,7 +400,7 @@ Try the included demo scripts:
 
 **MCP Server Demo:**
 ```bash
-python examples/preload_demo.py
+python examples/preload_example.py
 ```
 
 **REST API Demo:**
@@ -409,7 +409,7 @@ python examples/preload_demo.py
 python -m vision_rag.service
 
 # Terminal 2: Run the demo
-python examples/api_preload_demo.py
+python examples/api_preload_example.py
 ```
 
 ## See Also
