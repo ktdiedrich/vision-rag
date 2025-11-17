@@ -25,11 +25,17 @@ async def test_api_service():
         # 1. Health check
         print("1️⃣  Checking service health...")
         response = await client.get(f"{base_url}/health")
+        if response.status_code != 200:
+            print(f"   Error getting health: {response.status_code} - {response.text}")
+            return
         print(f"   Status: {response.json()}")
         
         # 2. Get statistics
         print("\n2️⃣  Getting statistics...")
         response = await client.get(f"{base_url}/stats")
+        if response.status_code != 200:
+            print(f"   Error getting stats: {response.status_code} - {response.text}")
+            return
         print(f"   Stats: {response.json()}")
         
         # 3. Add a test image
@@ -47,6 +53,9 @@ async def test_api_service():
                 "metadata": {"label": 6, "description": "test liver image"}
             }
         )
+        if response.status_code != 200:
+            print(f"   Error adding image: {response.status_code} - {response.text}")
+            return
         result = response.json()
         print(f"   Added: {result}")
         
@@ -59,6 +68,9 @@ async def test_api_service():
                 "n_results": 3
             }
         )
+        if response.status_code != 200:
+            print(f"   Error searching: {response.status_code} - {response.text}")
+            return
         search_results = response.json()
         print(f"   Found {search_results['count']} results")
         for result in search_results['results']:
@@ -71,6 +83,9 @@ async def test_api_service():
             f"{base_url}/search/label",
             json={"label": 6, "n_results": 5}
         )
+        if response.status_code != 200:
+            print(f"   Error searching by label: {response.status_code} - {response.text}")
+            return
         label_results = response.json()
         print(f"   Found {label_results['count']} images with label 'liver'")
 
