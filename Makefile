@@ -179,6 +179,8 @@ examples:
 	@echo "   - Lists available tools"
 	@echo "   - Demonstrates all MCP operations"
 	@echo "   - Shows agent-to-agent communication"
+	@echo "4. HuggingFace Demo (datasets + transformers):"
+	@echo "   make example-huggingface  # Runs a minimal Hugging Face example (may download models)"
 
 example-main:
 	@echo "Running main demo..."
@@ -202,6 +204,10 @@ example-mcp:
 	@echo "Running MCP client example..."
 	@echo "This will start an MCP server and demonstrate all tools"
 	python examples/mcp_client_example.py
+
+example-huggingface:
+	@echo "Running Hugging Face demo (datasets + transformers)"
+	python examples/huggingface_example.py
 
 # Demonstrations
 demo:
