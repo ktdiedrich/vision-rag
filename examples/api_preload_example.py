@@ -23,7 +23,12 @@ def list_available_datasets():
     response = requests.get(f"{API_BASE_URL}/datasets")
     
     if response.status_code == 200:
-        data = response.json()
+        try:
+            data = response.json()
+        except ValueError:
+            print("❌ Error: API returned non-JSON response for datasets")
+            print(response.text)
+            return None
         print(f"\nFound {data['count']} available datasets:\n")
         
         for name, info in data['datasets'].items():
@@ -56,7 +61,12 @@ def preload_dataset(dataset_name: str, split: str = "train", max_images: int = N
     )
     
     if response.status_code == 200:
-        data = response.json()
+        try:
+            data = response.json()
+        except ValueError:
+            print("❌ Error: API returned non-JSON response for preload")
+            print(response.text)
+            return None
         print(f"\n✅ Success!")
         print(f"   Dataset: {data['dataset_name']}")
         print(f"   Split: {data['split']}")
@@ -75,7 +85,12 @@ def get_stats():
     response = requests.get(f"{API_BASE_URL}/stats")
     
     if response.status_code == 200:
-        data = response.json()
+        try:
+            data = response.json()
+        except ValueError:
+            print("❌ Error: API returned non-JSON response for stats")
+            print(response.text)
+            return None
         print("\n📊 Current Statistics:")
         print(f"   Total embeddings: {data['total_embeddings']}")
         print(f"   Total images: {data['total_images']}")
@@ -96,7 +111,12 @@ def search_by_label(label: int, n_results: int = 5):
     )
     
     if response.status_code == 200:
-        data = response.json()
+        try:
+            data = response.json()
+        except ValueError:
+            print("❌ Error: API returned non-JSON response for search by label")
+            print(response.text)
+            return None
         print(f"\n   Found {data['count']} images")
         print(f"   Label: {data['query_info'].get('human_readable_label', 'Unknown')}")
         if data['results']:
@@ -114,7 +134,12 @@ def clear_store():
     response = requests.delete(f"{API_BASE_URL}/clear")
     
     if response.status_code == 200:
-        data = response.json()
+        try:
+            data = response.json()
+        except ValueError:
+            print("❌ Error: API returned non-JSON response for clear store")
+            print(response.text)
+            return None
         print(f"   ✅ {data['message']}")
         return data
     else:
@@ -137,7 +162,15 @@ def main():
         if response.status_code != 200:
             print("\n❌ API service not responding. Please start it first.")
             return
-        print("\n✅ API service is running")
+        # Try to decode JSON from the health endpoint; if it's non-JSON, print an error
+        try:
+            data = response.json()
+            print("\n✅ API service is running")
+            print(f"   Health: {data}")
+        except ValueError:
+            print("\n❌ API /health returned a non-JSON response")
+            print(f"   Raw response: {response.text}")
+            return
     except requests.exceptions.ConnectionError:
         print("\n❌ Cannot connect to API service. Please start it first:")
         print("   python -m vision_rag.service")

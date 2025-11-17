@@ -28,6 +28,9 @@ async def demo_list_datasets():
     )
     
     result = await server.list_available_datasets()
+    if not result:
+        print("❌ Error: No response from server")
+        return
     
     print(f"\nFound {result['count']} available datasets:\n")
     for name, info in result['datasets'].items():
@@ -59,6 +62,10 @@ async def demo_preload_small_dataset():
         max_images=100,  # Limit to 100 images for quick demo
     )
     
+    if not result:
+        print("❌ Error: Server preload returned no data")
+        return
+
     if result.get("success"):
         print(f"\n✅ Success!")
         print(f"   Dataset: {result['dataset_name']}")
@@ -99,6 +106,10 @@ async def demo_preload_multiple_datasets():
             max_images=max_images,
         )
         
+        if not result:
+            print(f"   ❌ Error: Server returned no data for {dataset_name}")
+            continue
+
         if result.get("success"):
             total_loaded += result['images_loaded']
             print(f"   ✅ Loaded {result['images_loaded']} images")
@@ -107,6 +118,9 @@ async def demo_preload_multiple_datasets():
     
     # Get final statistics
     stats = await server.get_statistics()
+    if not stats:
+        print("❌ Error: Unable to retrieve statistics")
+        return
     
     print(f"\n" + "="*60)
     print(f"Final Statistics:")
@@ -137,7 +151,7 @@ async def demo_preload_and_search():
         max_images=200,
     )
     
-    if not preload_result.get("success"):
+    if not preload_result or not preload_result.get("success"):
         print(f"❌ Preload failed: {preload_result.get('error')}")
         return
     
@@ -147,17 +161,21 @@ async def demo_preload_and_search():
     print("\n2️⃣  Searching for images with label 0...")
     
     search_result = await server.search_by_label(label=0, n_results=5)
+    if not search_result:
+        print("❌ Error: Search did not return a result")
+        return
     
-    print(f"\n   Found {search_result['count']} images with label 0:")
-    print(f"   Human-readable label: {search_result['human_readable_label']}")
-    print(f"   Image IDs: {search_result['ids'][:3]}...")  # Show first 3
+    print(f"\n   Found {search_result.get('count', 0)} images with label 0:")
+    print(f"   Human-readable label: {search_result.get('human_readable_label', 'Unknown')}")
+    ids = search_result.get('ids', []) or []
+    print(f"   Image IDs: {ids[:3]}...")  # Show first 3
     
     # List labels
     print("\n3️⃣  Available labels in PathMNIST:")
     
     # PathMNIST has different labels than OrganSMNIST
     # We need to get labels from the loaded dataset metadata
-    for idx, metadata in enumerate(search_result['metadatas'][:5]):
+    for idx, metadata in enumerate(search_result.get('metadatas', [])[:5]):
         print(f"   Image {idx}: label={metadata.get('label')}, dataset={metadata.get('dataset')}")
 
 
