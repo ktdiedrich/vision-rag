@@ -61,13 +61,21 @@ async def test_api_service():
         
         # 4. Search for similar images
         print("\n4️⃣  Searching for similar images...")
-        response = await client.post(
-            f"{base_url}/search",
-            json={
-                "image_base64": image_base64,
-                "n_results": 3
-            }
-        )
+        try:
+            response = await client.post(
+                f"{base_url}/search",
+                json={
+                    "image_base64": image_base64,
+                    "n_results": 3
+                },
+                timeout=10.0,
+            )
+        except httpx.ReadTimeout:
+            print("   ❌ Request timed out while searching for similar images. Try increasing service timeout or reduce payload size.")
+            return
+        except httpx.RequestError as exc:
+            print(f"   ❌ Error while making search request: {exc}")
+            return
         if response.status_code != 200:
             print(f"   Error searching: {response.status_code} - {response.text}")
             return
@@ -79,10 +87,18 @@ async def test_api_service():
         
         # 5. Search by label
         print("\n5️⃣  Searching by label (liver = 6)...")
-        response = await client.post(
-            f"{base_url}/search/label",
-            json={"label": 6, "n_results": 5}
-        )
+        try:
+            response = await client.post(
+                f"{base_url}/search/label",
+                json={"label": 6, "n_results": 5},
+                timeout=10.0,
+            )
+        except httpx.ReadTimeout:
+            print("   ❌ Request timed out while searching by label. Try again or increase server capacity.")
+            return
+        except httpx.RequestError as exc:
+            print(f"   ❌ Error while making label search request: {exc}")
+            return
         if response.status_code != 200:
             print(f"   Error searching by label: {response.status_code} - {response.text}")
             return
