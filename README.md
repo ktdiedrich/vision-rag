@@ -415,7 +415,7 @@ vision-rag/
 │   └── multi_dataset_demo.py         # Multi-dataset demonstration
 ├── examples/
 │   ├── main.py              # Main demo script
-│   └── client_demo.py       # Service client demo
+│   └── client_example.py       # Service client demo
 ├── docs/
 │   ├── DATASET_CONFIG_SUMMARY.md  # Dataset configuration guide
 │   └── SERVICE_GUIDE.md     # Service deployment guide
@@ -591,7 +591,7 @@ VISION_RAG_DATASET="PathMNIST" python scripts/run_service.py --mode both --port 
 
 ### Example Client Usage
 
-See `examples/client_demo.py` for a complete example of interacting with the service:
+See `examples/client_example.py` for a complete example of interacting with the service:
 
 ```python
 import asyncio

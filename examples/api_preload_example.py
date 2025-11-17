@@ -5,7 +5,7 @@ This script shows how to use the REST API endpoints to preload MedMNIST datasets
 
 Usage:
     1. Start the API service: python -m vision_rag.service
-    2. Run this script: python examples/api_preload_demo.py
+    2. Run this script: python examples/api_preload_example.py
 """
 
 import requests

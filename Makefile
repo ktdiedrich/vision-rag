@@ -188,14 +188,14 @@ example-client:
 	@echo "Running client demo..."
 	@if curl -s http://localhost:8001/health > /dev/null 2>&1; then \
 		echo "✓ Service is already running"; \
-		python examples/client_demo.py; \
+		python examples/client_example.py; \
 	else \
 		echo "⚠️  Service not running, starting it..."; \
 		$(MAKE) up-api; \
 		echo ""; \
 		echo "Waiting for service to be ready..."; \
 		sleep 3; \
-		python examples/client_demo.py; \
+		python examples/client_example.py; \
 	fi
 
 example-mcp:
