@@ -3,7 +3,7 @@
 import asyncio
 import json
 import sys
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Callable, Coroutine
 from pathlib import Path
 
 from mcp.server import Server
@@ -65,7 +65,8 @@ class VisionRAGMCPServer:
         self.searcher = ImageSearcher(encoder=self.encoder, rag_store=self.rag_store)
         
         # MCP protocol handlers
-        self.tools = {
+        # Keys map to async tool callables which return a coroutine
+        self.tools: Dict[str, Callable[..., Coroutine[Any, Any, Any]]] = {
             "search_similar_images": self.search_similar_images,
             "search_by_label": self.search_by_label,
             "add_image": self.add_image,
@@ -177,7 +178,7 @@ class VisionRAGMCPServer:
         
         # Optionally load and encode images
         if return_images:
-            images = []
+            images: List[Optional[str]] = []
             for metadata in results["metadatas"]:
                 if "image_path" in metadata:
                     image_path = Path(metadata["image_path"])
