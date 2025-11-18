@@ -6,6 +6,7 @@ from typing import Dict, Any
 
 # Environment variable configuration
 CLIP_MODEL_NAME = os.getenv("VISION_RAG_CLIP_MODEL", "clip-ViT-B-32")
+DINO_MODEL_NAME = os.getenv("VISION_RAG_DINO_MODEL", "facebook/dino-vits8")
 MEDMNIST_DATASET = os.getenv("VISION_RAG_DATASET", "OrganSMNIST")
 COLLECTION_NAME = os.getenv("VISION_RAG_COLLECTION_NAME", "vision_rag")
 PERSIST_DIRECTORY = os.getenv("VISION_RAG_PERSIST_DIR", "./chroma_db_api")

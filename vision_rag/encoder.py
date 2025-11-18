@@ -8,18 +8,18 @@ from sentence_transformers import SentenceTransformer
 from .config import CLIP_MODEL_NAME
 
 # Default image size for dummy images (MedMNIST dataset dimensions)
-DEFAULT_IMAGE_SIZE = 28
+DEFAULT_IMAGE_SIZE = 224
 
 
 class CLIPImageEncoder:
-    """Image encoder using CLIP ViT-B-32 model."""
+    """Image encoder using model from parameter."""
     
     def __init__(self, model_name: str = CLIP_MODEL_NAME):
         """
-        Initialize the CLIP encoder.
+        Initialize the encoder.
         
         Args:
-            model_name: Name of the CLIP model to use
+            model_name: Name of the model to use
         """
         self.model_name = model_name
         self.model = SentenceTransformer(model_name)

@@ -5,6 +5,7 @@ from transformers import AutoFeatureExtractor, AutoModel
 def test_hf_dino_import_and_forward():
     """Smoke test: load facebook/dino-vits8 feature extractor + model and run a forward.
 
+    HuggingFace DION models at https://huggingface.co/collections/facebook/dinov3 
     This test will be skipped if the model cannot be downloaded (e.g., no
     network in CI). We intentionally skip rather than fail to avoid
     blocking environments that do not allow large downloads.
