@@ -4,7 +4,7 @@ from typing import List, Union
 import numpy as np
 from PIL import Image
 from sentence_transformers import SentenceTransformer
-from transformers import AutoFeatureExtractor, AutoModel
+from transformers import AutoImageProcessor, AutoModel
 import torch
 
 from .config import CLIP_MODEL_NAME
@@ -84,7 +84,7 @@ class CLIPImageEncoder:
 class DINOImageEncoder:
     """Image encoder using a DINO Vision Transformer model from Hugging Face.
 
-    This uses `AutoFeatureExtractor`/`AutoModel` (Transformers) to create
+    This uses `AutoImageProcessor`/`AutoModel` (Transformers) to create
     an image embedding by mean-pooling the ViT last_hidden_state across the
     sequence dimension. The returned embedding shape is (embedding_dim,).
 
@@ -93,7 +93,8 @@ class DINOImageEncoder:
 
     def __init__(self, model_name: str = "facebook/dino-vits8", device: Union[str, torch.device] = None):
         self.model_name = model_name
-        self.feature_extractor = AutoFeatureExtractor.from_pretrained(model_name)
+        # Use AutoImageProcessor (newer API; replaces AutoFeatureExtractor)
+        self.feature_extractor = AutoImageProcessor.from_pretrained(model_name)
         self.model = AutoModel.from_pretrained(model_name)
 
         if device is None:

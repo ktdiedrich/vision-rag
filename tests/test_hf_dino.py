@@ -1,6 +1,6 @@
 import numpy as np
 import pytest
-from transformers import AutoFeatureExtractor, AutoModel
+from transformers import AutoImageProcessor, AutoModel
 
 def test_hf_dino_import_and_forward():
     """Smoke test: load facebook/dino-vits8 feature extractor + model and run a forward.
@@ -13,7 +13,7 @@ def test_hf_dino_import_and_forward():
     model_name = "facebook/dino-vits8"
 
     try:
-        feat = AutoFeatureExtractor.from_pretrained(model_name)
+        feat = AutoImageProcessor.from_pretrained(model_name)
         model = AutoModel.from_pretrained(model_name)
     except Exception as e:
         # Skip if we cannot access Hugging Face resources from the environment
