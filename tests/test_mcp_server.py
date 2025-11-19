@@ -38,20 +38,32 @@ def sample_image_base64(sample_image):
 
 
 @pytest.fixture
-async def server_with_data(mcp_server, sample_image_base64):
-    """Setup MCP server with test data."""
-    # Add several test images
-    for i in range(5):
-        img_array = np.random.randint(0, 255, size=(28, 28), dtype=np.uint8)
-        img = Image.fromarray(img_array, mode='L')
-        
-        await mcp_server.add_image(
-            image_base64=encode_image_to_base64(img),
-            metadata={"label": i % 3, "test": True, "index": i}
-        )
-    
+def server_with_data(mcp_server, sample_image_base64):
+    """Setup MCP server with test data.
+
+    This fixture intentionally runs synchronously to avoid requiring pytest-asyncio
+    for environments where the plugin is not installed. The MCP server's
+    async method `add_image` is awaited by running the coroutine using
+    `asyncio.run`, which is safe because this fixture is executed outside any
+    running event loop.
+    """
+
+    async def _add_images():
+        # Add several test images
+        for i in range(5):
+            img_array = np.random.randint(0, 255, size=(28, 28), dtype=np.uint8)
+            img = Image.fromarray(img_array, mode='L')
+
+            await mcp_server.add_image(
+                image_base64=encode_image_to_base64(img),
+                metadata={"label": i % 3, "test": True, "index": i},
+            )
+
+    # Execute the coroutine in a new event loop (safe in sync fixtures)
+    asyncio.run(_add_images())
+
     yield mcp_server
-    
+
     # Cleanup
     mcp_server.rag_store.clear()
 
@@ -1676,6 +1688,58 @@ class TestPreloadDataset:
             # Search to verify metadata
             stats = await mcp_server.get_statistics()
             assert stats["total_embeddings"] > 0
+
+
+class TestGenerateTSNEPlot:
+    """Tests for generate_tsne_plot MCP tool."""
+
+    @pytest.mark.asyncio
+    async def test_generate_tsne_plot_empty_store(self, mcp_server):
+        """Test that generate_tsne_plot returns an error when store is empty."""
+        result = await mcp_server.generate_tsne_plot(output_filename="tsne_empty.png", method="pca")
+
+        assert result["success"] is False
+        assert "error" in result
+        assert result["total_embeddings"] == 0
+
+    @pytest.mark.asyncio
+    async def test_generate_tsne_plot_success(self, server_with_data, tmp_path):
+        """Test successful generation of an embedding visualization (PCA)."""
+        # Ensure the store contains embeddings
+        total_before = server_with_data.rag_store.count()
+        assert total_before > 0
+
+        output_filename = str(tmp_path / "embeddings_pca.png")
+        result = await server_with_data.generate_tsne_plot(output_filename=output_filename, method="pca")
+
+        assert result["success"] is True
+        assert Path(result["output_path"]).exists()
+        assert result["method"] == "pca"
+        assert result["total_embeddings"] == total_before
+
+    @pytest.mark.asyncio
+    async def test_generate_tsne_plot_invalid_method(self, server_with_data):
+        """Test generate_tsne_plot with an unknown method returns an error."""
+        result = await server_with_data.generate_tsne_plot(output_filename="tsne_fail.png", method="unknown_method")
+
+        assert result["success"] is False
+        assert "error" in result
+
+
+class TestHandleToolCallGenerateTSNE:
+    """Tests for using generate_tsne_plot via handle_tool_call wrapper."""
+
+    @pytest.mark.asyncio
+    async def test_handle_tool_call_generate_tsne(self, server_with_data, tmp_path):
+        """Test calling generate_tsne_plot using handle_tool_call."""
+        outname = str(tmp_path / "via_handle_tsne.png")
+        res = await server_with_data.handle_tool_call(
+            "generate_tsne_plot",
+            {"output_filename": outname, "method": "pca"}
+        )
+
+        assert res["success"] is True
+        assert Path(res["result"]["output_path"]).exists()
 
 
 class TestSearchSimilarImagesExtended:
