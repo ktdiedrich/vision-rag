@@ -20,6 +20,7 @@ PERSIST_DIRECTORY = os.getenv("VISION_RAG_PERSIST_DIR", "./chroma_db_api")
 _image_size_str = os.getenv("VISION_RAG_IMAGE_SIZE", "224")
 # Default typed bindings for static analysis
 IMAGE_SIZE: int | None = None
+NEAREST_NEIGHBORS: int = int(os.getenv("VISION_RAG_NEAREST_NEIGHBORS", 11))
 try:
     if _image_size_str and _image_size_str.lower() != "none":
         IMAGE_SIZE = int(_image_size_str)

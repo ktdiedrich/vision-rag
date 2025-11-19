@@ -26,9 +26,8 @@ from vision_rag import (
     ImageSearcher,
     RAGVisualizer,
     ImageFileStore,
-    CLIP_MODEL_NAME,
 )
-from vision_rag.config import ENCODER_TYPE, DINO_MODEL_NAME
+from vision_rag.config import ENCODER_TYPE, DINO_MODEL_NAME, NEAREST_NEIGHBORS
 
 
 def main():
@@ -129,7 +128,7 @@ def main():
     searcher = ImageSearcher(encoder=encoder, rag_store=rag_store)
     
     # Select some test images for search queries
-    query_indices = np.random.choice(len(test_images), size=5, replace=False)
+    query_indices = np.random.choice(len(test_images), size=6, replace=False)
     query_images = [get_image_from_array(test_images[i]) for i in query_indices]
     query_labels = [int(test_labels[i]) for i in query_indices]
     
@@ -146,7 +145,7 @@ def main():
         readable_query_label = get_human_readable_label(query_label)
         print(f"\n   🔍 Search {i+1}: Query image with {readable_query_label}")
         
-        results = searcher.search(query_img, n_results=5)
+        results = searcher.search(query_img, n_results=NEAREST_NEIGHBORS)
         
         # Get retrieved images for visualization
         retrieved_images = []
