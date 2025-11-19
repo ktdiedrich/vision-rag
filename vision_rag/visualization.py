@@ -293,7 +293,8 @@ class RAGVisualizer:
         labels: List[int],
         method: str = 'tsne',
         filename: str = "embedding_space.png",
-        title: str = "Embedding Space Visualization"
+        title: str = "Embedding Space Visualization",
+        model_name: Optional[str] = None,
     ) -> str:
         """
         Save a 2D visualization of the embedding space using dimensionality reduction.
@@ -344,7 +345,11 @@ class RAGVisualizer:
         
         plt.xlabel(f'{method.upper()} 1')
         plt.ylabel(f'{method.upper()} 2')
-        plt.title(f'{title} ({method.upper()})', fontsize=14, fontweight='bold')
+        # Add model name to the title if available
+        full_title = f"{title} ({method.upper()})"
+        if model_name:
+            full_title = f"{full_title} — Model: {model_name}"
+        plt.title(full_title, fontsize=14, fontweight='bold')
         plt.grid(True, alpha=0.3)
         
         plt.tight_layout()

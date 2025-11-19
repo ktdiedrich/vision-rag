@@ -6,7 +6,7 @@ A retrieval-augmented generation (RAG) system for medical images using CLIP embe
 
 This project implements a vision-based RAG system that:
 - Downloads medical imaging datasets from the MedMNIST collection (12+ datasets supported)
-- Encodes medical images using CLIP models (default: ViT-B-32, configurable)
+ - Encodes medical images using CLIP or DINO encoders (default: DINO, configurable)
 - Stores embeddings in ChromaDB for efficient retrieval
 - Searches for similar images from the training set given test images
 - Supports multiple MedMNIST datasets: OrganSMNIST, PathMNIST, ChestMNIST, DermaMNIST, and more
@@ -23,9 +23,17 @@ Vision RAG can be configured using environment variables:
 ```bash
 # Choose which MedMNIST dataset to use (default: OrganSMNIST)
 export VISION_RAG_DATASET="PathMNIST"  # or ChestMNIST, DermaMNIST, etc.
+# Choose the encoder type (clip or dino - default: dino)
+export VISION_RAG_ENCODER="dino"
+# Optionally override DINO model name (default: facebook/dino-vits8)
+export VISION_RAG_DINO_MODEL="facebook/dino-vits8"
 
-# Choose CLIP model (default: clip-ViT-B-32)
+
+# Choose encoder and model
+# - Set `VISION_RAG_ENCODER` to `dino` (default) or `clip` if you prefer CLIP.
+# - If using CLIP, set `VISION_RAG_CLIP_MODEL` (defaults to clip-ViT-B-32). If using DINO, set `VISION_RAG_DINO_MODEL`.
 export VISION_RAG_CLIP_MODEL="clip-ViT-L-14"
+export VISION_RAG_ENCODER="dino"
 
 # Configure storage (defaults shown)
 export VISION_RAG_COLLECTION_NAME="vision_rag"

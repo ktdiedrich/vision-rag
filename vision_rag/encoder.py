@@ -245,7 +245,7 @@ class DINOImageEncoder(BaseImageEncoder):
 def build_encoder(encoder_type: str | None = None, **kwargs) -> ImageEncoderProtocol:
     """Factory: build an encoder by type.
 
-    encoder_type: 'clip' (default) or 'dino'. Additional keyword args are passed
+    encoder_type: 'clip' or 'dino' (default). Additional keyword args are passed
     through to the encoder constructors.
     """
     

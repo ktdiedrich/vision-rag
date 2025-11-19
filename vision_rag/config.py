@@ -9,8 +9,10 @@ CLIP_MODEL_NAME = os.getenv("VISION_RAG_CLIP_MODEL", "clip-ViT-B-32")
 DINO_MODEL_NAME = os.getenv("VISION_RAG_DINO_MODEL", "facebook/dino-vits8")
 MEDMNIST_DATASET = os.getenv("VISION_RAG_DATASET", "OrganSMNIST")
 COLLECTION_NAME = os.getenv("VISION_RAG_COLLECTION_NAME", "vision_rag")
-# Default encoder type for images. Options: 'clip' (default) or 'dino'
-ENCODER_TYPE = os.getenv("VISION_RAG_ENCODER", "clip")
+# Default encoder type for images. Options: 'clip' or 'dino' (default)
+# DINO tends to produce more distinct clusters in embedding space and is the
+# default starting point for new users. Use VISION_RAG_ENCODER to override.
+ENCODER_TYPE = os.getenv("VISION_RAG_ENCODER", "dino")
 PERSIST_DIRECTORY = os.getenv("VISION_RAG_PERSIST_DIR", "./chroma_db_api")
 # Image storage size - images will be resized to this size before storage
 # Default is 224 (CLIP's input size) for optimal quality

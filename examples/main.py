@@ -40,7 +40,7 @@ def main():
     
     # Step 3: Initialize encoder
     print("\n[3/6] Initializing CLIP encoder (clip-ViT-B-32)...")
-    encoder = build_encoder(encoder_type="clip", model_name="clip-ViT-B-32")
+    encoder = build_encoder()
     print(f"✓ Encoder initialized (embedding dim: {encoder.embedding_dimension})")
     
     # Step 4: Encode training images
