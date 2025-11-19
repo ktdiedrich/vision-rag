@@ -11,7 +11,7 @@ The Model Context Protocol (MCP) is an open protocol that enables seamless integ
 The Vision RAG MCP server provides 5 tools:
 
 ### 1. `search_similar_images`
-Search for visually similar medical images using CLIP embeddings.
+Search for visually similar medical images using image encoder embeddings (CLIP or DINO).
 
 **Parameters:**
 - `image_base64` (string, required): Base64 encoded image to search for
@@ -60,7 +60,7 @@ Get statistics about the vision RAG store.
 - `collection_name`: ChromaDB collection name
 - `persist_directory`: Database directory
 - `image_store_directory`: Image files directory
-- `encoder_model`: CLIP model being used
+- `encoder_model`: Encoder model being used (e.g., CLIP or DINO model name)
 - `embedding_dimension`: Vector dimension
 
 ### 5. `list_available_labels`
@@ -190,7 +190,8 @@ Environment variables (optional):
 - `VISION_RAG_DATASET`: Dataset to use (default: "OrganSMNIST")
 - `VISION_RAG_IMAGE_SIZE`: Image resize dimension (default: 224)
 - `VISION_RAG_MEDMNIST_SIZE`: MedMNIST download size (default: 224)
-- `VISION_RAG_CLIP_MODEL`: CLIP model name (default: "clip-ViT-B-32")
+- `VISION_RAG_CLIP_MODEL`: CLIP model name (default: "clip-ViT-B-32"). Only used when `VISION_RAG_ENCODER` is set to `clip`.
+- `VISION_RAG_DINO_MODEL`: DINO model name (default: "facebook/dino-vits8"). Only used when `VISION_RAG_ENCODER` is set to `dino`.
 
 ## Architecture
 

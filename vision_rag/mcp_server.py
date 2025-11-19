@@ -16,6 +16,8 @@ from .config import (
     MEDMNIST_DATASET, 
     IMAGE_SIZE,
     AVAILABLE_DATASETS,
+    DINO_MODEL_NAME,
+    ENCODER_TYPE,
 )
 from .encoder import build_encoder
 from .rag_store import ChromaRAGStore
@@ -38,7 +40,8 @@ class VisionRAGMCPServer:
     
     def __init__(
         self,
-        encoder_model: str = CLIP_MODEL_NAME,
+        encoder_model: str | None = None,
+        encoder_type: str | None = None,
         collection_name: str = "mcp_vision_rag",
         persist_directory: str = "./chroma_db_mcp",
         image_store_dir: str = "./image_store_mcp",
@@ -48,7 +51,7 @@ class VisionRAGMCPServer:
         Initialize MCP server.
         
         Args:
-            encoder_model: CLIP model name
+            encoder_model: Optional model name (e.g., CLIP or DINO)
             collection_name: ChromaDB collection name
             persist_directory: Directory for persistent storage
             image_store_dir: Directory for image file storage
@@ -56,8 +59,15 @@ class VisionRAGMCPServer:
                        If provided, images will be resized to (image_size, image_size).
                        If None, images are stored at original size.
         """
-        # Build a CLIP encoder via the encoder factory to centralize encoder construction
-        self.encoder = build_encoder(encoder_type="clip", model_name=encoder_model)
+        # Build an encoder using the encoder factory. If encoder_type is None,
+        # `build_encoder` will use the default from configuration (ENCODER_TYPE).
+        # Only pass a model_name through to the factory if one was explicitly
+        # provided. This avoids passing a CLIP model name to a DINO encoder
+        # when the default ENCODER_TYPE is set to 'dino'.
+        if encoder_model is not None:
+            self.encoder = build_encoder(encoder_type=encoder_type, model_name=encoder_model)
+        else:
+            self.encoder = build_encoder(encoder_type=encoder_type)
         self.rag_store = ChromaRAGStore(
             collection_name=collection_name,
             persist_directory=persist_directory,
@@ -266,7 +276,7 @@ class VisionRAGMCPServer:
             "image_store_directory": str(self.image_store.storage_dir),
             "image_store_directory_absolute": str(image_store_abs),
             "current_working_directory": str(Path.cwd()),
-            "encoder_model": CLIP_MODEL_NAME,
+            "encoder_model": getattr(self.encoder, "model_name", CLIP_MODEL_NAME),
             "embedding_dimension": self.encoder.embedding_dimension,
         }
     
@@ -367,7 +377,7 @@ class VisionRAGMCPServer:
         Preload a MedMNIST dataset into the RAG store.
         
         Downloads (if needed) and loads images from a MedMNIST dataset,
-        encodes them using CLIP, and stores the embeddings in the RAG store.
+        encodes them using the configured image encoder (CLIP or DINO), and stores the embeddings in the RAG store.
         
         Args:
             dataset_name: Name of MedMNIST dataset (e.g., 'PathMNIST', 'ChestMNIST')
@@ -425,7 +435,7 @@ class VisionRAGMCPServer:
             print(f"💾 Saved {len(pil_images)} images to disk", file=sys.stderr)
             
             # Encode all images
-            print(f"🧠 Encoding images with CLIP...", file=sys.stderr)
+            print(f"🧠 Encoding images with encoder: {getattr(self.encoder, 'model_name', 'unknown')}...", file=sys.stderr)
             embeddings = self.encoder.encode_images(pil_images)
             print(f"✅ Encoded {len(embeddings)} images", file=sys.stderr)
             
@@ -555,7 +565,7 @@ class VisionRAGMCPServer:
             print(f"✅ Loaded {len(pil_images)} valid images", file=sys.stderr)
             
             # Encode all images
-            print(f"🧠 Encoding images with CLIP...", file=sys.stderr)
+            print(f"🧠 Encoding images with encoder: {getattr(self.encoder, 'model_name', 'unknown')}...", file=sys.stderr)
             embeddings = self.encoder.encode_images(pil_images)
             print(f"✅ Encoded {len(embeddings)} images", file=sys.stderr)
             

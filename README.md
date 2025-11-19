@@ -1,6 +1,6 @@
 # vision-rag
 
-A retrieval-augmented generation (RAG) system for medical images using CLIP embeddings and ChromaDB.
+A retrieval-augmented generation (RAG) system for medical images using image encoder embeddings (CLIP or DINO) and ChromaDB.
 
 ## Overview
 
@@ -249,6 +249,8 @@ import os
 from vision_rag import (
     MEDMNIST_DATASET,
     CLIP_MODEL_NAME,
+    DINO_MODEL_NAME,
+    ENCODER_TYPE,
     download_medmnist,
     load_medmnist_data,
 )
@@ -259,7 +261,8 @@ os.environ["VISION_RAG_CLIP_MODEL"] = "clip-ViT-L-14"
 
 # Now the defaults will use ChestMNIST
 print(f"Using dataset: {MEDMNIST_DATASET}")
-print(f"Using CLIP model: {CLIP_MODEL_NAME}")
+print(f"Configured encoder type: {ENCODER_TYPE} (defaults to 'dino').")
+print(f"If using CLIP: set VISION_RAG_CLIP_MODEL or if using DINO: set VISION_RAG_DINO_MODEL to override the model name.")
 
 # Download and load using environment variable defaults
 download_medmnist()  # Downloads ChestMNIST
@@ -362,6 +365,7 @@ visualizer.save_embedding_space_visualization(
     labels=labels,
     method='tsne',
     filename="embedding_space.png"
+    model_name=getattr(encoder, "model_name", None),
 )
 ```
 
@@ -391,7 +395,7 @@ vision-rag/
 │   ├── __init__.py
 │   ├── config.py            # Configuration and dataset definitions
 │   ├── data_loader.py       # MedMNIST dataset loading (12+ datasets)
-│   ├── encoder.py           # CLIP image encoder
+│   ├── encoder.py           # Image encoder (CLIP or DINO)
 │   ├── rag_store.py         # ChromaDB RAG store
 │   ├── search.py            # Image search functionality
 │   ├── visualization.py     # Visualization utilities

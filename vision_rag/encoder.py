@@ -1,4 +1,10 @@
-"""Image encoder using CLIP model."""
+"""Image encoder implementations (CLIP and DINO).
+
+This module provides a base image encoder API and concrete implementations
+for SentenceTransformers-based CLIP encoders and a DINO Vision Transformer
+implementation (HuggingFace). Use `build_encoder` to construct the currently
+configured encoder (see `VISION_RAG_ENCODER` in config.py).
+"""
 
 from typing import List, Union, Protocol, runtime_checkable, Sequence, Any
 from abc import ABC, abstractmethod

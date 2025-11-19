@@ -7,7 +7,7 @@ This guide explains how to use the dataset preloading feature to quickly populat
 The preload functionality allows you to:
 - Discover available MedMNIST datasets
 - Automatically download datasets (if not already cached)
-- Encode images using CLIP
+ - Encode images using the configured image encoder (CLIP or DINO)
 - Store embeddings in ChromaDB
 - Load multiple datasets simultaneously
 - Control dataset size and number of images
@@ -218,7 +218,7 @@ MedMNIST datasets are available in multiple resolutions:
 - **128×128**: High resolution
 - **224×224**: Highest resolution (default, matches CLIP)
 
-**Recommendation:** Use 224×224 for best quality with CLIP embeddings.
+**Recommendation:** Use 224×224 for best quality with CLIP or DINO embeddings — this size matches many transformer encoders' expected input and is the default for MedMNIST.
 
 ## Performance Considerations
 

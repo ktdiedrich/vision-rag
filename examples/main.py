@@ -39,7 +39,7 @@ def main():
     print(f"  Using {n_train} images for demo")
     
     # Step 3: Initialize encoder
-    print("\n[3/6] Initializing CLIP encoder (clip-ViT-B-32)...")
+    print("\n[3/6] Initializing encoder via build_encoder() (default: DINO)")
     encoder = build_encoder()
     print(f"✓ Encoder initialized (embedding dim: {encoder.embedding_dimension})")
     
