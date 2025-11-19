@@ -21,7 +21,7 @@ from .config import (
     IMAGE_SIZE,
     AVAILABLE_DATASETS,
 )
-from .encoder import CLIPImageEncoder
+from .encoder import build_encoder
 from .rag_store import ChromaRAGStore
 from .search import ImageSearcher
 from .data_loader import (
@@ -163,7 +163,9 @@ class ReindexResponse(BaseModel):
 
 
 # Global state (initialized on startup)
-encoder: Optional[CLIPImageEncoder] = None
+from .encoder import ImageEncoderProtocol
+
+encoder: Optional[ImageEncoderProtocol] = None
 rag_store: Optional[ChromaRAGStore] = None
 searcher: Optional[ImageSearcher] = None
 image_store: Optional[ImageFileStore] = None
@@ -181,7 +183,8 @@ async def lifespan(app: FastAPI):
     print("🚀 Initializing Vision RAG Service...")
     
     # Initialize encoder
-    encoder = CLIPImageEncoder(model_name=CLIP_MODEL_NAME)
+    # Use the encoder factory to instantiate a CLIP encoder
+    encoder = build_encoder(encoder_type="clip", model_name=CLIP_MODEL_NAME)
     print(f"✅ Loaded CLIP encoder: {CLIP_MODEL_NAME} (embedding dim: {encoder.embedding_dimension})")
     
     # Initialize RAG store

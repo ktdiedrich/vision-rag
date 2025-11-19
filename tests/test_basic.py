@@ -10,7 +10,7 @@ def test_imports():
     from vision_rag import (
         download_medmnist,
         load_medmnist_data,
-        CLIPImageEncoder,
+        build_encoder,
         ChromaRAGStore,
         ImageSearcher,
     )
@@ -18,7 +18,7 @@ def test_imports():
     # Just verify imports work
     assert download_medmnist is not None
     assert load_medmnist_data is not None
-    assert CLIPImageEncoder is not None
+    assert build_encoder is not None
     assert ChromaRAGStore is not None
     assert ImageSearcher is not None
 

@@ -4,7 +4,7 @@ from typing import List, Union, Dict
 import numpy as np
 from PIL import Image
 
-from .encoder import CLIPImageEncoder
+from .encoder import ImageEncoderProtocol
 from .rag_store import ChromaRAGStore
 
 
@@ -13,7 +13,7 @@ class ImageSearcher:
     
     def __init__(
         self,
-        encoder: CLIPImageEncoder,
+        encoder: ImageEncoderProtocol,
         rag_store: ChromaRAGStore,
     ):
         """

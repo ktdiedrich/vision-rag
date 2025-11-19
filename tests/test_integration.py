@@ -9,7 +9,7 @@ from vision_rag.data_loader import (
     download_medmnist,
     load_medmnist_data,
 )
-from vision_rag.encoder import CLIPImageEncoder
+from vision_rag.encoder import build_encoder
 from vision_rag.rag_store import ChromaRAGStore
 from vision_rag.search import ImageSearcher
 
@@ -54,7 +54,7 @@ def test_end_to_end_pipeline(temp_data_dir, temp_db_dir):
     train_labels_subset = train_labels[:20]
     
     # Step 3: Initialize encoder
-    encoder = CLIPImageEncoder(model_name="clip-ViT-B-32")
+    encoder = build_encoder(encoder_type="clip", model_name="clip-ViT-B-32")
     
     # Step 4: Encode training images
     train_embeddings = encoder.encode_images(
@@ -126,7 +126,7 @@ def test_pipeline_with_same_image(temp_data_dir, temp_db_dir):
     train_images_subset = train_images[:10]
     
     # Encode and store
-    encoder = CLIPImageEncoder(model_name="clip-ViT-B-32")
+    encoder = build_encoder(encoder_type="clip", model_name="clip-ViT-B-32")
     embeddings = encoder.encode_images([img for img in train_images_subset])
     
     rag_store = ChromaRAGStore(

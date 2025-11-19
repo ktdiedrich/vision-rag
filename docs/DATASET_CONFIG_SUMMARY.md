@@ -14,7 +14,6 @@ Vision RAG now supports 12 different MedMNIST datasets through configurable envi
 ### 2. Enhanced Data Loader (`vision_rag/data_loader.py`)
 - New generic functions: `download_medmnist()`, `load_medmnist_data()`, `get_medmnist_label_names()`
 - All functions accept `dataset_name` parameter
-- Backward compatibility maintained with original `download_organmnist()`, `load_organmnist_data()`, etc.
 - Updated `get_human_readable_label()` to accept dataset parameter
 
 ### 3. Updated Core Modules
@@ -79,15 +78,6 @@ VISION_RAG_DATASET="ChestMNIST" python scripts/run_service.py --mode api
 # Run MCP server with DermaMNIST
 VISION_RAG_DATASET="DermaMNIST" python scripts/run_service.py --mode mcp
 ```
-
-## Backward Compatibility
-
-All original functions remain available and work exactly as before:
-- `download_organmnist()` - calls `download_medmnist("OrganSMNIST")`
-- `load_organmnist_data()` - calls `load_medmnist_data("OrganSMNIST")`
-- `get_organmnist_label_names()` - calls `get_medmnist_label_names("OrganSMNIST")`
-
-Existing code will continue to work without modifications.
 
 ## Testing
 

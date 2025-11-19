@@ -21,12 +21,12 @@ from vision_rag import (
     load_medmnist_data,
     get_image_from_array,
     get_human_readable_label,
-    CLIPImageEncoder,
+    build_encoder,
     ChromaRAGStore,
     ImageSearcher,
     RAGVisualizer,
     ImageFileStore,
-    CLIP_MODEL_NAME
+    CLIP_MODEL_NAME,
 )
 
 
@@ -71,8 +71,9 @@ def main():
     print(f"   ✅ Saved label distribution: {label_dist_path}")
     
     # Step 4: Initialize encoder and encode subset of training images
-    print("\n🧠 Initializing CLIP encoder...")
-    encoder = CLIPImageEncoder(model_name=CLIP_MODEL_NAME)
+    print("\n🧠 Initializing CLIP encoder via build_encoder()...")
+    # Use the factory to create a CLIP encoder
+    encoder = build_encoder(encoder_type="clip", model_name=CLIP_MODEL_NAME)
     print(f"   Embedding dimension: {encoder.embedding_dimension}")
     
     # Use a smaller subset for demonstration to speed up processing

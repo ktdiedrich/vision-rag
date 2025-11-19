@@ -25,7 +25,7 @@ def verify_imports():
         from vision_rag import (
             download_medmnist,
             load_medmnist_data,
-            CLIPImageEncoder,
+            build_encoder,
             ChromaRAGStore,
             ImageSearcher,
         )
