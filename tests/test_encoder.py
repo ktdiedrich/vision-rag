@@ -4,13 +4,13 @@ import pytest
 import numpy as np
 from PIL import Image
 
-from vision_rag.encoder import CLIPImageEncoder
+from vision_rag.encoder import build_encoder
 
 
 @pytest.fixture
 def encoder():
     """Create a CLIP encoder instance."""
-    return CLIPImageEncoder(model_name="clip-ViT-B-32")
+    return build_encoder(encoder_type="clip", model_name="clip-ViT-B-32")
 
 
 @pytest.fixture

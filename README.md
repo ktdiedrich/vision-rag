@@ -46,18 +46,6 @@ export VISION_RAG_IMAGE_SIZE="224"
 
 Vision RAG supports 12 MedMNIST datasets. All datasets are available in multiple sizes (28, 64, 128, and 224 pixels) and are downloaded at 224×224 by default for optimal CLIP compatibility:
 
-- **OrganSMNIST** (default): Organ images (sagittal view) - 11 classes
-- **PathMNIST**: Colon pathology images - 9 classes
-- **ChestMNIST**: Chest X-ray images - 14 classes
-- **DermaMNIST**: Dermatoscope images of skin lesions - 7 classes
-- **OCTMNIST**: Retinal OCT images - 4 classes
-- **PneumoniaMNIST**: Chest X-ray for pneumonia detection - 2 classes
-- **RetinaMNIST**: Fundus camera images for diabetic retinopathy - 5 classes
-- **BreastMNIST**: Breast ultrasound images - 2 classes
-- **BloodMNIST**: Blood cell microscope images - 8 classes
-- **TissueMNIST**: Kidney cortex cells - 8 classes
-- **OrganAMNIST**: Organ images (axial view) - 11 classes
-- **OrganCMNIST**: Organ images (coronal view) - 11 classes
 
 You can list available datasets programmatically:
 
@@ -76,15 +64,8 @@ print(f"Classes: {config['n_classes']}, Channels: {config['channels']}")
 ### Dataset Sizes
 
 MedMNIST datasets are available in multiple resolutions:
-- **28×28**: Original MedMNIST size (smallest, fastest downloads)
-- **64×64**: Medium resolution
-- **128×128**: High resolution
-- **224×224**: Highest resolution, matches CLIP's native input size (default)
 
 **Default Configuration:**
-- Downloads use **224×224** for maximum quality and CLIP compatibility
-- Storage also uses **224×224** to match (configurable via `VISION_RAG_IMAGE_SIZE`)
-- CLIP internally processes all images at 224×224
 
 **To use a different size:**
 ```python
@@ -179,8 +160,8 @@ deactivate
 ```python
 from vision_rag import (
     download_medmnist,
-    load_organmnist_data,
-    CLIPImageEncoder,
+    load_medmnist_data,
+    build_encoder,
     ChromaRAGStore,
     ImageSearcher,
 )
@@ -189,10 +170,10 @@ from vision_rag import (
 download_medmnist(dataset_name="OrganSMNIST")
 
 # Load training data (automatically downloads if not present)
-train_images, train_labels = load_organmnist_data(split="train")
+train_images, train_labels = load_medmnist_data(dataset_name="OrganSMNIST", split="train")
 
 # Initialize encoder
-encoder = CLIPImageEncoder(model_name="clip-ViT-B-32")
+encoder = build_encoder(encoder_type="clip", model_name="clip-ViT-B-32")
 
 # Encode images
 embeddings = encoder.encode_images([img for img in train_images])
@@ -215,7 +196,7 @@ from vision_rag import (
     download_medmnist,
     load_medmnist_data,
     get_medmnist_label_names,
-    CLIPImageEncoder,
+    build_encoder,
     ChromaRAGStore,
     ImageSearcher,
 )
@@ -228,8 +209,7 @@ train_images, train_labels = load_medmnist_data(dataset_name="PathMNIST", split=
 label_names = get_medmnist_label_names(dataset_name="PathMNIST")
 print(f"PathMNIST has {len(label_names)} classes: {label_names}")
 
-# Initialize encoder
-encoder = CLIPImageEncoder()
+encoder = build_encoder(encoder_type="clip")
 
 # Encode images
 embeddings = encoder.encode_images([img for img in train_images])
@@ -278,7 +258,7 @@ download_medmnist()  # Downloads ChestMNIST
 train_images, train_labels = load_medmnist_data(split="train")  # Loads ChestMNIST
 
 # Load test data
-test_images, test_labels = load_organmnist_data(split="test", root="./data")
+test_images, test_labels = load_medmnist_data(dataset_name="OrganSMNIST", split="test", root="./data")
 
 # Search for similar images
 searcher = ImageSearcher(encoder=encoder, rag_store=rag_store)

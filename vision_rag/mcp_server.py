@@ -17,7 +17,7 @@ from .config import (
     IMAGE_SIZE,
     AVAILABLE_DATASETS,
 )
-from .encoder import CLIPImageEncoder
+from .encoder import build_encoder
 from .rag_store import ChromaRAGStore
 from .search import ImageSearcher
 from .data_loader import (
@@ -56,7 +56,8 @@ class VisionRAGMCPServer:
                        If provided, images will be resized to (image_size, image_size).
                        If None, images are stored at original size.
         """
-        self.encoder = CLIPImageEncoder(model_name=encoder_model)
+        # Build a CLIP encoder via the encoder factory to centralize encoder construction
+        self.encoder = build_encoder(encoder_type="clip", model_name=encoder_model)
         self.rag_store = ChromaRAGStore(
             collection_name=collection_name,
             persist_directory=persist_directory,

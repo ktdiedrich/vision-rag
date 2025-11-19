@@ -19,7 +19,7 @@ from vision_rag import (
     download_medmnist,
     load_medmnist_data,
     get_medmnist_label_names,
-    CLIPImageEncoder,
+    build_encoder,
     ChromaRAGStore,
     ImageSearcher,
     ImageFileStore,
@@ -70,7 +70,7 @@ def main():
     
     # Initialize encoder
     print("Initializing CLIP encoder...")
-    encoder = CLIPImageEncoder()
+    encoder = build_encoder(encoder_type="clip")
     
     # Take a subset for demonstration (first 100 images)
     print("Encoding first 100 images...")

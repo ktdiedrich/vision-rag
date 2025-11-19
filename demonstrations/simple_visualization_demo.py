@@ -18,7 +18,7 @@ from vision_rag import (
     load_medmnist_data,
     get_image_from_array,
     get_human_readable_label,
-    CLIPImageEncoder,
+    build_encoder,
     ChromaRAGStore,
     ImageSearcher,
     RAGVisualizer,
@@ -61,7 +61,7 @@ def main():
     
     # 2. SET UP RAG SYSTEM
     print("\n🧠 Step 2: Setting up RAG system...")
-    encoder = CLIPImageEncoder()
+    encoder = build_encoder(encoder_type="clip")
     rag_store = ChromaRAGStore(collection_name="simple_demo", persist_directory="./chroma_db_simple")
     rag_store.clear()
     

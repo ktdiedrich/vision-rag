@@ -9,7 +9,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from vision_rag import (
     download_medmnist,
     load_medmnist_data,
-    CLIPImageEncoder,
+    build_encoder,
     ChromaRAGStore,
     ImageSearcher,
     ImageFileStore,
@@ -40,7 +40,7 @@ def main():
     
     # Step 3: Initialize encoder
     print("\n[3/6] Initializing CLIP encoder (clip-ViT-B-32)...")
-    encoder = CLIPImageEncoder(model_name="clip-ViT-B-32")
+    encoder = build_encoder(encoder_type="clip", model_name="clip-ViT-B-32")
     print(f"✓ Encoder initialized (embedding dim: {encoder.embedding_dimension})")
     
     # Step 4: Encode training images

@@ -17,7 +17,7 @@ from .data_loader import (
     get_medmnist_label_names,
     get_human_readable_label,
 )
-from .encoder import CLIPImageEncoder
+from .encoder import CLIPImageEncoder, build_encoder
 from .rag_store import ChromaRAGStore
 from .image_store import ImageFileStore
 from .search import ImageSearcher
@@ -43,6 +43,7 @@ __all__ = [
     "get_human_readable_label",
     # Core components
     "CLIPImageEncoder",
+    "build_encoder",
     "ChromaRAGStore",
     "ImageFileStore",
     "ImageSearcher",
