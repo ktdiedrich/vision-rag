@@ -16,6 +16,8 @@ from .config import (
     MEDMNIST_DATASET, 
     IMAGE_SIZE,
     AVAILABLE_DATASETS,
+    DINO_MODEL_NAME,
+    ENCODER_TYPE,
 )
 from .encoder import build_encoder
 from .rag_store import ChromaRAGStore
@@ -49,7 +51,7 @@ class VisionRAGMCPServer:
         Initialize MCP server.
         
         Args:
-            encoder_model: CLIP model name
+            encoder_model: Optional model name (e.g., CLIP or DINO)
             collection_name: ChromaDB collection name
             persist_directory: Directory for persistent storage
             image_store_dir: Directory for image file storage
@@ -375,7 +377,7 @@ class VisionRAGMCPServer:
         Preload a MedMNIST dataset into the RAG store.
         
         Downloads (if needed) and loads images from a MedMNIST dataset,
-        encodes them using CLIP, and stores the embeddings in the RAG store.
+        encodes them using the configured image encoder (CLIP or DINO), and stores the embeddings in the RAG store.
         
         Args:
             dataset_name: Name of MedMNIST dataset (e.g., 'PathMNIST', 'ChestMNIST')
