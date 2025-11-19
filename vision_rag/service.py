@@ -124,6 +124,7 @@ class PreloadResponse(BaseModel):
     images_loaded: int
     total_embeddings: int
     message: str
+    encoder_name: Optional[str] = Field(None, description="Name of the encoder model used for encoding images")
 
 
 class TsnePlotRequest(BaseModel):
@@ -431,6 +432,7 @@ async def preload_dataset(request: PreloadRequest):
             dataset_name=request.dataset_name,
             split=request.split,
             images_loaded=len(images),
+            total_embeddings=total_embeddings,
             encoder_name=getattr(encoder, 'model_name', 'unknown'),
             message=message,
         )
