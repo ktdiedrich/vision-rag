@@ -6,13 +6,18 @@ from typing import Dict, Any
 
 # Environment variable configuration
 CLIP_MODEL_NAME = os.getenv("VISION_RAG_CLIP_MODEL", "clip-ViT-B-32")
+DINO_MODEL_NAME = os.getenv("VISION_RAG_DINO_MODEL", "facebook/dino-vits8")
 MEDMNIST_DATASET = os.getenv("VISION_RAG_DATASET", "OrganSMNIST")
 COLLECTION_NAME = os.getenv("VISION_RAG_COLLECTION_NAME", "vision_rag")
+# Default encoder type for images. Options: 'clip' (default) or 'dino'
+ENCODER_TYPE = os.getenv("VISION_RAG_ENCODER", "clip")
 PERSIST_DIRECTORY = os.getenv("VISION_RAG_PERSIST_DIR", "./chroma_db_api")
 # Image storage size - images will be resized to this size before storage
 # Default is 224 (CLIP's input size) for optimal quality
 # Set to None or empty string to disable resizing
 _image_size_str = os.getenv("VISION_RAG_IMAGE_SIZE", "224")
+# Default typed bindings for static analysis
+IMAGE_SIZE: int | None = None
 try:
     if _image_size_str and _image_size_str.lower() != "none":
         IMAGE_SIZE = int(_image_size_str)
@@ -23,6 +28,8 @@ except (ValueError, TypeError):
 # MedMNIST dataset download size - images are available in 28, 64, 128, or 224
 # Default is 224 to match CLIP's input size for best quality
 _medmnist_size_str = os.getenv("VISION_RAG_MEDMNIST_SIZE", "224")
+# MEDMNIST_SIZE typed default
+MEDMNIST_SIZE: int = 224
 try:
     MEDMNIST_SIZE = int(_medmnist_size_str)
 except (ValueError, TypeError):

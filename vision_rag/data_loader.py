@@ -1,7 +1,7 @@
 """Data loading module for MedMNIST datasets."""
 
 from pathlib import Path
-from typing import Tuple
+from typing import Tuple, Union
 import numpy as np
 import medmnist
 from PIL import Image
@@ -12,7 +12,7 @@ from .config import MEDMNIST_DATASET, MEDMNIST_SIZE, get_dataset_config
 DEFAULT_DATA_DIR = Path(__file__).parent.parent / "data"
 
 
-def download_medmnist(dataset_name: str = None, root: str = None, size: int = None) -> None:
+def download_medmnist(dataset_name: str = None, root: Union[Path, str, None] = None, size: int = None) -> None:
     """
     Download a MedMNIST dataset if it doesn't already exist.
     
@@ -58,7 +58,7 @@ def download_medmnist(dataset_name: str = None, root: str = None, size: int = No
 def load_medmnist_data(
     dataset_name: str = None,
     split: str = "train",
-    root: str = None,
+    root: Union[Path, str, None] = None,
     size: int = None
 ) -> Tuple[np.ndarray, np.ndarray]:
     """
@@ -121,7 +121,7 @@ def get_image_from_array(image_array: np.ndarray) -> Image.Image:
         raise ValueError(f"Unsupported image array shape: {image_array.shape}")
 
 
-def get_medmnist_label_names(dataset_name: str = None, root: str = None, size: int = None) -> dict:
+def get_medmnist_label_names(dataset_name: str = None, root: Union[Path, str, None] = None, size: int = None) -> dict:
     """
     Get human readable label names for a MedMNIST dataset.
     

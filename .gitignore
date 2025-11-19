@@ -219,3 +219,6 @@ scratch.txt
 .mcp.pid
 .both.pid
 logs/
+
+# Ignore GitHub metadata (workflows, issue templates)
+.github/

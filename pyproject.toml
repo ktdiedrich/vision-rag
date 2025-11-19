@@ -26,6 +26,8 @@ dependencies = [
     "datasets>=2.13.0",
     "umap-learn>=0.5.3",
     "uvicorn>=0.34.0",
+    "mypy>=1.8.0",
+    "pip>=25.3",
 ]
 
 [tool.setuptools.packages.find]
@@ -35,3 +37,11 @@ include = ["vision_rag*"]
 pythonpath = ["."]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
+
+[tool.mypy]
+python_version = "3.12"
+files = ["vision_rag"]
+ignore_missing_imports = true
+disallow_untyped_defs = false
+pretty = true
+no_implicit_optional = false

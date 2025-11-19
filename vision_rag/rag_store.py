@@ -1,6 +1,6 @@
 """RAG store using ChromaDB."""
 
-from typing import List, Optional
+from typing import List, Optional, Mapping, Any, Sequence
 import numpy as np
 import chromadb
 from chromadb.config import Settings
@@ -37,7 +37,7 @@ class ChromaRAGStore:
         self,
         embeddings: np.ndarray,
         ids: Optional[List[str]] = None,
-        metadatas: Optional[List[dict]] = None,
+        metadatas: Optional[Sequence[Mapping[str, Any]]] = None,
     ) -> None:
         """
         Add embeddings to the RAG store.
@@ -90,10 +90,13 @@ class ChromaRAGStore:
             n_results=n_results,
         )
         
+        distances = results.get("distances") or [[]]
+        metadatas = results.get("metadatas") or [[]]
+        ids = results.get("ids") or [[]]
         return {
-            "ids": results.get("ids", [[]])[0],
-            "distances": results.get("distances", [[]])[0],
-            "metadatas": results.get("metadatas", [[]])[0],
+            "ids": ids[0],
+            "distances": distances[0],
+            "metadatas": metadatas[0],
         }
     
     def search_by_label(
