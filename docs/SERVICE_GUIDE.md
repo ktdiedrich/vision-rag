@@ -4,7 +4,9 @@
 
 ### Environment Variables
 
-- `VISION_RAG_CLIP_MODEL`: CLIP model name to use for image encoding (default: `clip-ViT-B-32`)
+- `VISION_RAG_ENCODER`: Encoder type to use for images (`dino` or `clip`; default: `dino`)
+- `VISION_RAG_CLIP_MODEL`: CLIP model name to use for image encoding (default: `clip-ViT-B-32`). Only used when `VISION_RAG_ENCODER` is `clip`.
+- `VISION_RAG_DINO_MODEL`: DINO model name to use for image encoding (default: `facebook/dino-vits8`). Only used when `VISION_RAG_ENCODER` is `dino`.
 - `VISION_RAG_COLLECTION_NAME`: ChromaDB collection name for the service (default: `vision_rag_service`)
 - `VISION_RAG_PERSIST_DIR`: Directory path for persistent ChromaDB storage (default: `./service_chroma_db`)
 

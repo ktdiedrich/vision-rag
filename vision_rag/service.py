@@ -183,9 +183,9 @@ async def lifespan(app: FastAPI):
     print("🚀 Initializing Vision RAG Service...")
     
     # Initialize encoder
-    # Use the encoder factory to instantiate a CLIP encoder
-    encoder = build_encoder(encoder_type="clip", model_name=CLIP_MODEL_NAME)
-    print(f"✅ Loaded CLIP encoder: {CLIP_MODEL_NAME} (embedding dim: {encoder.embedding_dimension})")
+    # Use the encoder factory to create an encoder according to ENCODER_TYPE
+    encoder = build_encoder()
+    print(f"✅ Loaded encoder: {getattr(encoder, 'model_name', CLIP_MODEL_NAME)} (embedding dim: {encoder.embedding_dimension})")
     
     # Initialize RAG store
     rag_store = ChromaRAGStore(
@@ -241,7 +241,7 @@ async def health_check():
     
     return HealthResponse(
         status="healthy",
-        encoder_model=CLIP_MODEL_NAME,
+        encoder_model=getattr(encoder, "model_name", CLIP_MODEL_NAME),
         collection_name=rag_store.collection_name,
         embeddings_count=rag_store.count(),
     )

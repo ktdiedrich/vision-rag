@@ -4,7 +4,7 @@ This document describes how to generate t-SNE (and other dimensionality reductio
 
 ## Overview
 
-The Vision RAG system now supports generating 2D visualizations of the high-dimensional CLIP embeddings stored in the RAG database. This helps you:
+The Vision RAG system supports generating 2D visualizations of the high-dimensional encoder embeddings (CLIP or DINO) stored in the RAG database. This helps you:
 
 - **Understand clustering**: See how similar images group together in embedding space
 - **Identify patterns**: Discover semantic relationships between images

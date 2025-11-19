@@ -259,7 +259,7 @@ os.environ["VISION_RAG_CLIP_MODEL"] = "clip-ViT-L-14"
 
 # Now the defaults will use ChestMNIST
 print(f"Using dataset: {MEDMNIST_DATASET}")
-print(f"Using CLIP model: {CLIP_MODEL_NAME}")
+print(f"Using encoder model: {CLIP_MODEL_NAME} (change VISION_RAG_ENCODER to 'dino' to use DINO)")
 
 # Download and load using environment variable defaults
 download_medmnist()  # Downloads ChestMNIST
