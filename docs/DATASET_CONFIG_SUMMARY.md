@@ -17,7 +17,7 @@ Vision RAG now supports 12 different MedMNIST datasets through configurable envi
 - Updated `get_human_readable_label()` to accept dataset parameter
 
 ### 3. Updated Core Modules
-- **encoder.py**: Uses `CLIP_MODEL_NAME` from config module
+ - **encoder.py**: Uses `VISION_RAG_ENCODER` default (`dino`) and `CLIP_MODEL_NAME` / `DINO_MODEL_NAME` from config when applicable
 - **service.py**: Uses all config variables, passes dataset to label functions
 - **mcp_server.py**: Uses config variables, supports dataset-specific labels
 - **__init__.py**: Exports new configuration functions and constants

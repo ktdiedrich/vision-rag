@@ -433,7 +433,7 @@ class VisionRAGMCPServer:
             print(f"💾 Saved {len(pil_images)} images to disk", file=sys.stderr)
             
             # Encode all images
-            print(f"🧠 Encoding images with CLIP...", file=sys.stderr)
+            print(f"🧠 Encoding images with encoder: {getattr(self.encoder, 'model_name', 'unknown')}...", file=sys.stderr)
             embeddings = self.encoder.encode_images(pil_images)
             print(f"✅ Encoded {len(embeddings)} images", file=sys.stderr)
             
@@ -563,7 +563,7 @@ class VisionRAGMCPServer:
             print(f"✅ Loaded {len(pil_images)} valid images", file=sys.stderr)
             
             # Encode all images
-            print(f"🧠 Encoding images with CLIP...", file=sys.stderr)
+            print(f"🧠 Encoding images with encoder: {getattr(self.encoder, 'model_name', 'unknown')}...", file=sys.stderr)
             embeddings = self.encoder.encode_images(pil_images)
             print(f"✅ Encoded {len(embeddings)} images", file=sys.stderr)
             

@@ -237,7 +237,7 @@ When working correctly:
    📦 Loaded 4708 images from PneumoniaMNIST
    ✂️  Limited to 100 images
    💾 Saved 100 images to disk
-   🧠 Encoding images with CLIP...
+            🧠 Encoding images with encoder: <MODEL_NAME> (CLIP or DINO)
    ✅ Encoded 100 images
    📊 Adding 100 embeddings to RAG store...
    ✅ Successfully loaded 100 images from PneumoniaMNIST (train)

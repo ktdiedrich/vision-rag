@@ -431,7 +431,7 @@ async def preload_dataset(request: PreloadRequest):
             dataset_name=request.dataset_name,
             split=request.split,
             images_loaded=len(images),
-            total_embeddings=total_embeddings,
+            encoder_name=getattr(encoder, 'model_name', 'unknown'),
             message=message,
         )
         
