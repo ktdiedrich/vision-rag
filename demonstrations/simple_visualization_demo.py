@@ -84,6 +84,14 @@ def main():
     searcher = ImageSearcher(encoder=encoder, rag_store=rag_store)
     print(f"Added {len(train_subset)} images to RAG store")
     print(f"Saved {image_store.count()} images to disk")
+
+    # Save a label distribution visualization for the training subset
+    label_dist_path = visualizer.save_label_distribution(
+        labels=[label for _, label in train_subset],
+        filename="label_distribution_training_subset.png",
+        title="Label Distribution: Training Subset (50 images)",
+    )
+    print(f"✅ Saved label distribution: {label_dist_path}")
     
     # 3. VISUALIZE EMBEDDING SPACE WITH T-SNE
     print("\n🌌 Step 3: Visualizing embedding space with t-SNE...")
