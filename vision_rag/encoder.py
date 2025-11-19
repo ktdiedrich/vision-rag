@@ -1,6 +1,6 @@
 """Image encoder using CLIP model."""
 
-from typing import List, Union, Protocol, runtime_checkable, Sequence
+from typing import List, Union, Protocol, runtime_checkable, Sequence, Any
 from abc import ABC, abstractmethod
 import numpy as np
 from PIL import Image
@@ -46,6 +46,30 @@ class BaseImageEncoder(ABC):
             pil_images.append(img)
         return pil_images
 
+    def _to_model_input(self, images: Sequence[Union[Image.Image, np.ndarray]]) -> Any:
+        """
+        Prepare and normalize images to the shape expected by downstream model APIs.
+
+        Notes:
+        - Different encoder implementations expect different input types:
+          - NLP/CLIP SentenceTransformer image encoders accept PIL Images or
+            numpy arrays; encoder.encode() signatures are overloaded and
+            statically mypy doesn't accept ``PIL.Image`` types. At runtime
+            these calls succeed, so we use ``typing.cast(Any, ...)`` when
+            invoking the model to bypass static overload checks.
+          - HuggingFace models (AutoModel + AutoImageProcessor) expect a
+            sequence of PIL images or inputs prepared by the processor.
+
+        This helper centralizes conversion to `list[PIL.Image]` which works
+        well with both the SentenceTransformer and HuggingFace image loaders.
+
+        Returns:
+            The transformed images list appropriate for passing into
+            model encoding calls. Exact return type is intentionally loose
+            (Any) because different backends accept different types.
+        """
+        return self._to_pil_list(images)
+
     def encode_image(self, image: Union[Image.Image, np.ndarray]) -> np.ndarray:
         emb = self.encode_images([image])
         return emb[0]
@@ -87,15 +111,17 @@ class CLIPImageEncoder(BaseImageEncoder):
         if isinstance(image, np.ndarray):
             image = Image.fromarray(image.astype(np.uint8))
 
-        # Convert PIL to numpy array (sentence-transformers expects arrays for image encoders)
-        if isinstance(image, Image.Image):
-            image_arr = np.asarray(image)
-        else:
-            image_arr = image
+        # Use helper to build a consistent model input across encoders
+        model_input = self._to_model_input([image])[0]
 
-        # Encode the image. Provide a 1-element ndarray to match the encode() overload
-        embedding = self.model.encode(np.expand_dims(image_arr, 0))
-        # model.encode returns a list/array of embeddings; return first
+        # Encode using SentenceTransformer image support (pass PIL Image)
+        # mypy can't match the overloads so cast to Any to silence type checker
+        embedding = self.model.encode(typing.cast(Any, model_input))
+        # SentenceTransformer may return a single 1-D array for a single example
+        # or a 2-D array for batched examples. Normalize to 1-D output.
+        if hasattr(embedding, "ndim") and getattr(embedding, "ndim") == 1:
+            return embedding
+        # Otherwise return the first example's embedding
         return embedding[0]
         return embedding
     
@@ -112,11 +138,10 @@ class CLIPImageEncoder(BaseImageEncoder):
         # Convert numpy arrays to PIL Images if needed
         pil_images = self._to_pil_list(images)
 
-        # Convert pil images to numpy arrays and stack into single ndarray
-        image_arrays = np.asarray([np.asarray(img) for img in pil_images])
-
-        # Encode all images (provide an ndarray to match the overloads)
-        embeddings = self.model.encode(image_arrays)
+        # Encode all images using SentenceTransformer; it handles PIL images
+        # Cast to Any to avoid mypy overload errors
+        model_input = self._to_model_input(pil_images)
+        embeddings = self.model.encode(typing.cast(Any, model_input))
         return embeddings
     
     @property
@@ -128,8 +153,8 @@ class CLIPImageEncoder(BaseImageEncoder):
             return dimension
         
         # If not available, encode a dummy image to get the dimension
-        dummy_image = np.zeros((DEFAULT_IMAGE_SIZE, DEFAULT_IMAGE_SIZE), dtype=np.uint8)
-        embedding = self.model.encode(np.expand_dims(dummy_image, 0))
+        dummy_image = Image.fromarray(np.zeros((DEFAULT_IMAGE_SIZE, DEFAULT_IMAGE_SIZE), dtype=np.uint8), mode='L')
+        embedding = self.model.encode(typing.cast(Any, dummy_image))
         return embedding.shape[0]
 
 
