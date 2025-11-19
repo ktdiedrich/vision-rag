@@ -88,7 +88,7 @@ def main():
     # 3. VISUALIZE EMBEDDING SPACE WITH T-SNE
     print("\n🌌 Step 3: Visualizing embedding space with t-SNE...")
     embedding_labels = [label for _, label in train_subset]
-        embedding_viz_path = visualizer.save_embedding_space_visualization(
+    embedding_viz_path = visualizer.save_embedding_space_visualization(
             embeddings=train_embeddings,
             labels=embedding_labels,
             method='tsne',
