@@ -69,8 +69,8 @@ def main():
     print("-" * 40)
     
     # Initialize encoder
-    print("Initializing CLIP encoder...")
-    encoder = build_encoder(encoder_type="clip")
+    print("Initializing encoder via build_encoder() using configured ENCODER_TYPE...")
+    encoder = build_encoder()
     
     # Take a subset for demonstration (first 100 images)
     print("Encoding first 100 images...")

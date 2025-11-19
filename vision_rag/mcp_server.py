@@ -660,6 +660,7 @@ class VisionRAGMCPServer:
                 labels=labels,
                 method=method,
                 filename=output_filename,
+                model_name=getattr(self.encoder, "model_name", CLIP_MODEL_NAME),
                 title=title,
             )
             

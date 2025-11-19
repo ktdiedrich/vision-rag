@@ -753,7 +753,8 @@ async def generate_tsne_plot(request: TsnePlotRequest):
             labels=labels,
             method=request.method,
             filename=request.output_filename,
-            title=request.title,
+                title=request.title,
+                model_name=getattr(encoder, "model_name", CLIP_MODEL_NAME),
         )
         
         return TsnePlotResponse(

@@ -61,7 +61,7 @@ def main():
     
     # 2. SET UP RAG SYSTEM
     print("\n🧠 Step 2: Setting up RAG system...")
-    encoder = build_encoder(encoder_type="clip")
+    encoder = build_encoder()
     rag_store = ChromaRAGStore(collection_name="simple_demo", persist_directory="./chroma_db_simple")
     rag_store.clear()
     
@@ -88,12 +88,13 @@ def main():
     # 3. VISUALIZE EMBEDDING SPACE WITH T-SNE
     print("\n🌌 Step 3: Visualizing embedding space with t-SNE...")
     embedding_labels = [label for _, label in train_subset]
-    embedding_viz_path = visualizer.save_embedding_space_visualization(
-        embeddings=train_embeddings,
-        labels=embedding_labels,
-        method='tsne',
-        filename="embedding_space_tsne.png"
-    )
+        embedding_viz_path = visualizer.save_embedding_space_visualization(
+            embeddings=train_embeddings,
+            labels=embedding_labels,
+            method='tsne',
+            filename="embedding_space_tsne.png",
+            model_name=getattr(encoder, "model_name", None),
+        )
     print(f"✅ Saved: {embedding_viz_path}")
     
     # 4. VISUALIZE SEARCH INPUT IMAGES

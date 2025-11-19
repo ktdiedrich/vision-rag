@@ -23,6 +23,11 @@ Vision RAG can be configured using environment variables:
 ```bash
 # Choose which MedMNIST dataset to use (default: OrganSMNIST)
 export VISION_RAG_DATASET="PathMNIST"  # or ChestMNIST, DermaMNIST, etc.
+# Choose the encoder type (clip or dino - default: clip)
+export VISION_RAG_ENCODER="dino"
+# Optionally override DINO model name (default: facebook/dino-vits8)
+export VISION_RAG_DINO_MODEL="facebook/dino-vits8"
+
 
 # Choose CLIP model (default: clip-ViT-B-32)
 export VISION_RAG_CLIP_MODEL="clip-ViT-L-14"

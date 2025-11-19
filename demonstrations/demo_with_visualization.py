@@ -28,6 +28,7 @@ from vision_rag import (
     ImageFileStore,
     CLIP_MODEL_NAME,
 )
+from vision_rag.config import ENCODER_TYPE, DINO_MODEL_NAME
 
 
 def main():
@@ -71,9 +72,10 @@ def main():
     print(f"   ✅ Saved label distribution: {label_dist_path}")
     
     # Step 4: Initialize encoder and encode subset of training images
-    print("\n🧠 Initializing CLIP encoder via build_encoder()...")
-    # Use the factory to create a CLIP encoder
-    encoder = build_encoder(encoder_type="clip", model_name=CLIP_MODEL_NAME)
+    print("\n🧠 Initializing encoder via build_encoder() using configured ENCODER_TYPE...")
+    encoder = build_encoder(encoder_type="dino")  # uses ENCODER_TYPE from config; set VISION_RAG_ENCODER='dino' to use DINO
+    if ENCODER_TYPE and ENCODER_TYPE.lower().startswith("dino"):
+        print(f"   Using DINO model: {DINO_MODEL_NAME}")
     print(f"   Embedding dimension: {encoder.embedding_dimension}")
     
     # Use a smaller subset for demonstration to speed up processing
@@ -117,7 +119,8 @@ def main():
         embeddings=train_embeddings,
         labels=subset_labels,
         method='tsne',
-        filename="03_embedding_space_tsne.png"
+        filename="03_embedding_space_tsne.png",
+        model_name=getattr(encoder, "model_name", None),
     )
     print(f"   ✅ Saved embedding space visualization: {embedding_viz_path}")
     
