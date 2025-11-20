@@ -175,3 +175,33 @@ def test_search_by_label_no_matches(rag_store, sample_embeddings):
     assert len(results["ids"]) == 0
     assert len(results["metadatas"]) == 0
     assert len(results["embeddings"]) == 0
+
+
+def test_metadata_normalization_list_and_ndarray(rag_store, sample_embeddings):
+    """Test that add_embeddings normalizes list and ndarray metadata values to JSON strings.
+    """
+    import json
+
+    # Prepare 3 embeddings and metadata containing list and numpy ndarray
+    embeddings = sample_embeddings[:3]
+    metadatas = [
+        {"label": [0]},
+        {"label": np.array([1, 2])},
+        {"label": "string_label"},
+    ]
+
+    rag_store.add_embeddings(embeddings, metadatas=metadatas)
+
+    # Retrieve all metadatas and verify normalization
+    stored = rag_store.get_all_embeddings()
+    assert len(stored["metadatas"]) == 3
+
+    # First two should be JSON strings that parse back to the original lists
+    assert isinstance(stored["metadatas"][0]["label"], str)
+    assert json.loads(stored["metadatas"][0]["label"]) == [0]
+
+    assert isinstance(stored["metadatas"][1]["label"], str)
+    assert json.loads(stored["metadatas"][1]["label"]) == [1, 2]
+
+    # Third should remain a string
+    assert stored["metadatas"][2]["label"] == "string_label"

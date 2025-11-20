@@ -1,6 +1,7 @@
 """Tests for image search functionality."""
 
 import pytest
+import json
 import numpy as np
 from PIL import Image
 import tempfile
@@ -220,3 +221,87 @@ def test_batch_classify(temp_db_dir):
     assert isinstance(results, list) and len(results) == 2
     assert results[0]["label"] == 0
     assert results[1]["label"] == 1
+
+
+def test_classify_label_normalization_and_fallbacks(temp_db_dir):
+    """Test that classify handles stringified JSON labels, list labels, numpy labels, and fallback to index."""
+    rag = ChromaRAGStore(collection_name="test_classify_label_norm", persist_directory=temp_db_dir)
+
+    # Embeddings and metadata for normalization tests
+    embeddings = np.array([
+        [1.0, 0.0],  # index 0
+        [10.0, 0.0], # index 1
+    ], dtype=float)
+
+    # Various metadata label formats
+    metadatas = [
+        {"label": json.dumps([0, 1])},  # JSON list string -> should parse to 0
+        {"label": "1"},               # string '1' -> should parse to int 1
+    ]
+    rag.add_embeddings(embeddings, metadatas=metadatas)
+
+    fake_encoder = FakeEncoder(embedding_dim=2)
+    searcher = ImageSearcher(encoder=fake_encoder, rag_store=rag)
+
+    # Query near first embedding which has label 0 in JSON
+    query = np.array([1.05, 0.0])
+    res = searcher.classify(query, n_results=1)
+    assert res["label"] == 0
+
+    # Change metadata to string numeric labels -> classify should read int
+    rag.clear()
+    metadatas = [
+        {"label": "0"},
+        {"label": "1"},
+    ]
+    rag.add_embeddings(embeddings, metadatas=metadatas)
+    searcher = ImageSearcher(encoder=fake_encoder, rag_store=rag)
+    res = searcher.classify(query, n_results=1)
+    assert res["label"] == 0
+
+    # No label, but index metadata present -> should use index
+    rag.clear()
+    metadatas = [
+        {"index": 0},
+        {"index": 1},
+    ]
+    rag.add_embeddings(embeddings, metadatas=metadatas)
+    searcher = ImageSearcher(encoder=fake_encoder, rag_store=rag)
+    res = searcher.classify(query, n_results=1)
+    assert res["label"] == 0
+
+
+def test_classify_tie_breaker_chooses_smallest_avg_distance(temp_db_dir):
+    """Test that tie in counts is resolved by choosing the label with smallest mean distance."""
+    rag = ChromaRAGStore(collection_name="test_classify_tie", persist_directory=temp_db_dir)
+
+    # We will set up 4 points: two of label 0 (one close, one far) and two of label 1 (both moderately close)
+    embeddings = np.array([
+        [1.0],   # label 0 (close)
+        [8.0],   # label 0 (far)
+        [2.0],   # label 1 (moderate)
+        [2.5],   # label 1 (moderate)
+    ], dtype=float)
+
+    metadatas = [
+        {"label": 0},
+        {"label": 0},
+        {"label": 1},
+        {"label": 1},
+    ]
+    rag.add_embeddings(embeddings, metadatas=metadatas)
+
+    class OneDEncoder(FakeEncoder):
+        def encode_image(self, image):
+            return np.array([float(image)])
+
+        def encode_images(self, images):
+            return np.array([[float(i[0]) if isinstance(i, (list, np.ndarray)) else float(i)] for i in images])
+
+    fake_encoder = OneDEncoder(embedding_dim=1)
+    searcher = ImageSearcher(encoder=fake_encoder, rag_store=rag)
+
+    # Query at 1.5 -> nearest neighbors will be label0(1.0) and label1(2.0) etc. Use n_results=4 to include tie
+    classification = searcher.classify(np.array([1.5]), n_results=4)
+    # Counts tie (2 each); average distances: label 0 mean high, label 1 mean lower => predicted label 1
+    assert classification["label"] == 1
