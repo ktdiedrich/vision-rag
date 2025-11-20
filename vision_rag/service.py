@@ -69,6 +69,23 @@ class SearchResponse(BaseModel):
     count: int
 
 
+class ClassifyRequest(BaseModel):
+    """Request model for classification (k-NN).
+    """
+    image_base64: str = Field(..., description="Base64 encoded image")
+    n_results: int = Field(5, ge=1, le=100, description="Number of neighbors to use for classification")
+
+
+class ClassifyResponse(BaseModel):
+    """Response model for classification results."""
+    query_info: Dict[str, Any]
+    predicted_label: Optional[int]
+    predicted_label_name: Optional[str] = None
+    count: int
+    confidence: float
+    neighbors: List[SearchResult]
+
+
 class HealthResponse(BaseModel):
     """Health check response."""
     status: str
@@ -534,6 +551,63 @@ async def search_similar_images(request: SearchRequest):
     except Exception as e:
         traceback.print_exc()
         raise HTTPException(status_code=400, detail=f"Error processing image: {str(e)}")
+
+
+@app.post("/classify", response_model=ClassifyResponse)
+async def classify_image(request: ClassifyRequest):
+    """
+    Classify a query image using k-NN majority vote over nearest neighbors.
+    """
+    if searcher is None:
+        raise HTTPException(status_code=503, detail="Service not initialized")
+
+    try:
+        # Decode base64 image
+        image = decode_base64_image(request.image_base64)
+
+        # Perform classification
+        classification = searcher.classify(image, n_results=request.n_results)
+
+        neighbors = classification.get("neighbors", {}) or {}
+        # Format neighbors as SearchResult entries
+        neighbor_results = []
+        for idx, (rid, dist, meta) in enumerate(
+            zip(neighbors.get("ids", []), neighbors.get("distances", []), neighbors.get("metadatas", []))
+        ):
+            human_label = None
+            if "label" in meta:
+                human_label = get_human_readable_label(meta["label"], dataset_name=MEDMNIST_DATASET)
+
+            neighbor_results.append(
+                SearchResult(
+                    id=rid,
+                    distance=float(dist) if dist is not None else 0.0,
+                    metadata=meta,
+                    human_readable_label=human_label,
+                )
+            )
+
+        predicted_label = classification.get("label")
+        predicted_label_name = None
+        if isinstance(predicted_label, int):
+            predicted_label_name = get_human_readable_label(predicted_label, dataset_name=MEDMNIST_DATASET)
+
+        return ClassifyResponse(
+            query_info={
+                "image_size": image.size,
+                "image_mode": image.mode,
+                "n_results_requested": request.n_results,
+            },
+            predicted_label=predicted_label,
+            predicted_label_name=predicted_label_name,
+            count=int(classification.get("count", 0)),
+            confidence=float(classification.get("confidence", 0.0)),
+            neighbors=neighbor_results,
+        )
+
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=400, detail=f"Error classifying image: {str(e)}")
 
 
 @app.post("/search/label", response_model=SearchResponse)
