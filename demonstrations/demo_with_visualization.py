@@ -139,7 +139,8 @@ def main():
     )
     print(f"   ✅ Saved search input visualization: {search_input_path}")
     
-    # Perform searches and save results
+    # Perform searches, classify queries, and save results
+    classification_results = []
     for i, (query_img, query_label) in enumerate(zip(query_images, query_labels)):
         readable_query_label = get_human_readable_label(query_label, dataset_name=MEDMNIST_DATASET)
         print(f"\n   🔍 Search {i+1}: Query image with {readable_query_label}")
@@ -172,13 +173,28 @@ def main():
         readable_retrieved_labels = [get_human_readable_label(label, dataset_name=MEDMNIST_DATASET) if isinstance(label, int) else str(label) for label in retrieved_labels]
         print(f"      Retrieved labels: {readable_retrieved_labels}")
         print(f"      Distances: {[f'{d:.3f}' for d in results['distances']]}")
+
+        # Classify the query image using k-NN majority vote and compare to ground-truth
+        classification = searcher.classify(query_img, n_results=NEAREST_NEIGHBORS)
+        predicted_label = classification.get("label")
+        confidence = classification.get("confidence")
+        predicted_human = get_human_readable_label(predicted_label, dataset_name=MEDMNIST_DATASET) if isinstance(predicted_label, int) else str(predicted_label)
+        truth_human = get_human_readable_label(query_label, dataset_name=MEDMNIST_DATASET)
+        is_correct = predicted_label == query_label
+        print(f"      Classification: Predicted {predicted_human} ({predicted_label}), Confidence: {confidence:.2f}; Truth: {truth_human} ({query_label}) -> {'CORRECT' if is_correct else 'WRONG'}")
+        classification_results.append((query_label, predicted_label, confidence))
     
+    # Compute classification accuracy
+    correct = sum(1 for truth, pred, conf in classification_results if truth == pred)
+    total = len(classification_results)
+    accuracy = correct / total if total > 0 else 0.0
     print(f"\n🎉 Demonstration complete!")
+    print(f"\n🧮 Classification summary: {correct}/{total} correct ({accuracy:.2%} accuracy)")
     print(f"📁 All visualizations saved to: {visualizer.output_dir.absolute()}")
     print("\nGenerated files:")
     for viz_file in sorted(visualizer.output_dir.glob("*.png")):
         print(f"   - {viz_file.name}")
-
+    
 
 if __name__ == "__main__":
     main()

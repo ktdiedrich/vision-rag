@@ -229,6 +229,68 @@ class TestSearchEndpoint:
         
         response = client.post("/search", json=search_request)
         assert response.status_code == 400
+
+
+    def test_classify_without_data(self, client, sample_image_base64):
+        """Test classify endpoint with empty DB (no labels)."""
+        # Ensure DB cleared
+        client.delete("/clear")
+
+        classify_request = {
+            "image_base64": sample_image_base64,
+            "n_results": 5,
+        }
+
+        response = client.post("/classify", json=classify_request)
+        assert response.status_code == 200
+
+        data = response.json()
+        assert "predicted_label" in data
+        # Should have no neighbors when DB empty
+        assert data["count"] == 0
+        assert isinstance(data["neighbors"], list)
+
+
+    def test_classify_with_data(self, client, sample_image_base64, setup_test_data):
+        """Test classify endpoint with data in DB (setup_test_data fixture)."""
+        classify_request = {
+            "image_base64": sample_image_base64,
+            "n_results": 3,
+        }
+
+        response = client.post("/classify", json=classify_request)
+        assert response.status_code == 200
+
+        data = response.json()
+        assert "predicted_label" in data
+        # With data the count should be >0
+        assert data["count"] > 0
+        assert isinstance(data["neighbors"], list)
+
+
+    def test_classify_invalid_base64(self, client):
+        """Test classify with invalid base64 data returns 400."""
+        classify_request = {
+            "image_base64": "invalid_base64_string",
+            "n_results": 5,
+        }
+
+        response = client.post("/classify", json=classify_request)
+        assert response.status_code == 400
+
+
+    def test_classify_n_results_validation(self, client, sample_image_base64):
+        """Test n_results parameter validation for classify endpoint."""
+        classify_request = {
+            "image_base64": sample_image_base64,
+            "n_results": 0,
+        }
+        response = client.post("/classify", json=classify_request)
+        assert response.status_code == 422  # Validation error
+
+        classify_request["n_results"] = 101
+        response = client.post("/classify", json=classify_request)
+        assert response.status_code == 422
     
     def test_search_n_results_validation(self, client, sample_image_base64):
         """Test n_results parameter validation."""
