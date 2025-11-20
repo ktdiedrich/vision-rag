@@ -28,6 +28,8 @@ from vision_rag import (
     ImageFileStore,
 )
 from vision_rag.config import ENCODER_TYPE, DINO_MODEL_NAME, NEAREST_NEIGHBORS, MEDMNIST_DATASET, LARGE_SUBSET
+import csv
+import json
 
 
 def main():
@@ -182,14 +184,50 @@ def main():
         truth_human = get_human_readable_label(query_label, dataset_name=MEDMNIST_DATASET)
         is_correct = predicted_label == query_label
         print(f"      Classification: Predicted {predicted_human} ({predicted_label}), Confidence: {confidence:.2f}; Truth: {truth_human} ({query_label}) -> {'CORRECT' if is_correct else 'WRONG'}")
-        classification_results.append((query_label, predicted_label, confidence))
+        classification_results.append({
+            "query_index": int(i),
+            "query_label": int(query_label) if isinstance(query_label, (int, np.integer)) else query_label,
+            "query_label_name": truth_human,
+            "predicted_label": int(predicted_label) if isinstance(predicted_label, (int, np.integer)) else predicted_label,
+            "predicted_label_name": predicted_human,
+            "confidence": float(confidence) if confidence is not None else 0.0,
+            "correct": bool(is_correct),
+        })
     
     # Compute classification accuracy
-    correct = sum(1 for truth, pred, conf in classification_results if truth == pred)
+    correct = sum(1 for row in classification_results if row.get("query_label") == row.get("predicted_label"))
     total = len(classification_results)
     accuracy = correct / total if total > 0 else 0.0
     print(f"\n🎉 Demonstration complete!")
     print(f"\n🧮 Classification summary: {correct}/{total} correct ({accuracy:.2%} accuracy)")
+
+    # Save classification results to CSV and JSON
+    csv_path = visualizer.output_dir / "classification_results.csv"
+    json_path = visualizer.output_dir / "classification_results.json"
+
+    # CSV header order
+    csv_fields = [
+        "query_index",
+        "query_label",
+        "query_label_name",
+        "predicted_label",
+        "predicted_label_name",
+        "confidence",
+        "correct",
+    ]
+
+    # Write CSV
+    with open(csv_path, "w", newline="", encoding="utf-8") as csvfile:
+        writer = csv.DictWriter(csvfile, fieldnames=csv_fields)
+        writer.writeheader()
+        for row in classification_results:
+            writer.writerow({k: row.get(k) for k in csv_fields})
+
+    # Write JSON
+    with open(json_path, "w", encoding="utf-8") as jf:
+        json.dump(classification_results, jf, indent=2)
+
+    print(f"\n💾 Saved classification results to: {csv_path} and {json_path}")
     print(f"📁 All visualizations saved to: {visualizer.output_dir.absolute()}")
     print("\nGenerated files:")
     for viz_file in sorted(visualizer.output_dir.glob("*.png")):
