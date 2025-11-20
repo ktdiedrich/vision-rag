@@ -27,7 +27,7 @@ from vision_rag import (
     RAGVisualizer,
     ImageFileStore,
 )
-from vision_rag.config import ENCODER_TYPE, DINO_MODEL_NAME, NEAREST_NEIGHBORS, DEMO_DATASET
+from vision_rag.config import ENCODER_TYPE, DINO_MODEL_NAME, NEAREST_NEIGHBORS, DEMO_DATASET, LARGE_SUBSET
 
 
 def main():
@@ -78,8 +78,7 @@ def main():
     print(f"   Embedding dimension: {encoder.embedding_dimension}")
     
     # Use a smaller subset for demonstration to speed up processing
-    subset_size = 1000
-    subset_indices = np.random.choice(len(train_images), size=subset_size, replace=False)
+    subset_indices = np.random.choice(len(train_images), size=LARGE_SUBSET, replace=False)
     subset_images = [get_image_from_array(train_images[i]) for i in subset_indices]
     subset_labels = [int(train_labels[i]) for i in subset_indices]
     

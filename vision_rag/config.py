@@ -38,7 +38,8 @@ try:
 except (ValueError, TypeError):
     MEDMNIST_SIZE = 224
 DEMO_DATASET: str = os.getenv("VISION_RAG_DEMO_DATASET", "OrganSMNIST")
-
+SMALL_SUBSET: int = int(os.getenv("VISION_RAG_SMALL_SUBSET", 50))
+LARGE_SUBSET: int = int(os.getenv("VISION_RAG_LARGE_SUBSET", 1000))
 
 # Available MedMNIST datasets with their characteristics
 # Note: image_size reflects the default MEDMNIST_SIZE (224)

@@ -25,7 +25,7 @@ from vision_rag import (
     ImageFileStore,
 )
 
-from vision_rag.config import DEMO_DATASET
+from vision_rag.config import DEMO_DATASET, SMALL_SUBSET
 
 
 def main():
@@ -44,7 +44,7 @@ def main():
     test_images, test_labels = load_medmnist_data(dataset_name=DEMO_DATASET, split="test")
     
     # Use small subsets for demonstration
-    train_subset = [(train_images[i], int(train_labels[i])) for i in range(50)]
+    train_subset = [(train_images[i], int(train_labels[i])) for i in range(SMALL_SUBSET)]
     test_subset = [(test_images[i], int(test_labels[i])) for i in range(5)]
     
     # 1. VISUALIZE INPUT IMAGES GOING INTO RAG STORE
@@ -90,7 +90,7 @@ def main():
     label_dist_path = visualizer.save_label_distribution(
         labels=[label for _, label in train_subset],
         filename="label_distribution_training_subset.png",
-        title="Label Distribution: Training Subset (50 images)",
+        title=f"Label Distribution: Training Subset ({SMALL_SUBSET} images)",
     )
     print(f"✅ Saved label distribution: {label_dist_path}")
     
