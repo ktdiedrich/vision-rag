@@ -1,9 +1,11 @@
 """RAG store using ChromaDB."""
 
-from typing import List, Optional, Mapping, Any, Sequence
+from typing import List, Optional, Mapping, Any, Sequence, Union
 import numpy as np
 import chromadb
+from chromadb.base_types import SparseVector
 from chromadb.config import Settings
+import json
 
 
 class ChromaRAGStore:
@@ -59,6 +61,8 @@ class ChromaRAGStore:
         else:
             # Ensure each metadata dict is non-empty
             metadatas = [m if m else {"index": i} for i, m in enumerate(metadatas)]
+        # Normalize metadata types to those acceptable by ChromaDB
+        metadatas = self._normalize_metadata(metadatas)
         
         # Add embeddings to collection
         self.collection.add(
@@ -66,6 +70,50 @@ class ChromaRAGStore:
             ids=ids,
             metadatas=metadatas,
         )
+
+    def _normalize_metadata(
+        self, metadatas: Sequence[Mapping[str, Any]]
+    ) -> List[Mapping[str, Union[str, int, float, bool, None, SparseVector]]]:
+        """
+        Normalize metadata values to primitives supported by ChromaDB.
+
+        ChromaDB expects metadata values to be primitive types (str, int, float,
+        bool, None) or SparseVector. Complex types like lists, tuples, and numpy
+        arrays are converted to JSON strings so they can be safely persisted.
+
+        Args:
+            metadatas: Sequence of metadata dicts to normalize.
+
+        Returns:
+            Sequence of normalized metadata dicts.
+        """
+        normalized: List[Mapping[str, Union[str, int, float, bool, None, SparseVector]]] = []
+        for m in metadatas:
+            nm: dict[str, Any] = {}
+            for k, v in m.items():
+                # Allow primitives
+                if isinstance(v, (str, bool, int, float)) or v is None:
+                    nm[k] = v
+                # Numpy scalar
+                elif isinstance(v, np.generic):
+                    try:
+                        nm[k] = v.item()
+                    except Exception:
+                        nm[k] = str(v)
+                # Numpy ndarray
+                elif isinstance(v, np.ndarray):
+                    nm[k] = json.dumps(v.tolist())
+                # Lists or tuples
+                elif isinstance(v, (list, tuple)):
+                    nm[k] = json.dumps(v)
+                # Fallback: try to JSON serialize, else string-ify
+                else:
+                    try:
+                        nm[k] = json.dumps(v)
+                    except Exception:
+                        nm[k] = str(v)
+            normalized.append(nm)
+        return normalized
     
     def search(
         self,
