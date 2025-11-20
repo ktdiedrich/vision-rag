@@ -76,7 +76,7 @@ class TestMCPServerInitialization:
         assert mcp_server.encoder is not None
         assert mcp_server.rag_store is not None
         assert mcp_server.searcher is not None
-        assert len(mcp_server.tools) == 10
+        assert len(mcp_server.tools) == 11
         
         # Check all expected tools are registered
         expected_tools = [
@@ -86,6 +86,7 @@ class TestMCPServerInitialization:
             "get_statistics",
             "list_available_labels",
             "generate_tsne_plot",
+            "classify_image",
         ]
         for tool in expected_tools:
             assert tool in mcp_server.tools
@@ -259,6 +260,29 @@ class TestSearchSimilarImages:
                 image_base64="not_valid_base64",
                 n_results=5
             )
+
+
+class TestClassifyImage:
+    """Tests for the classify_image tool."""
+
+    @pytest.mark.asyncio
+    async def test_classify_empty_store(self, mcp_server, sample_image_base64):
+        """Classify with empty store returns no neighbors and count=0."""
+        result = await mcp_server.classify_image(
+            image_base64=sample_image_base64,
+            n_results=3,
+        )
+        assert "predicted_label" in result
+        assert result["count"] == 0
+        assert isinstance(result["neighbors"], list)
+
+    @pytest.mark.asyncio
+    async def test_classify_with_data(self, server_with_data, sample_image_base64):
+        """Classify with data returns prediction, count>0 and neighbors."""
+        res = await server_with_data.classify_image(image_base64=sample_image_base64, n_results=3)
+        assert "predicted_label" in res
+        assert res["count"] > 0
+        assert isinstance(res["neighbors"], list)
 
 
 class TestSearchByLabel:
@@ -570,7 +594,7 @@ class TestGetToolDefinitions:
         definitions = mcp_server.get_tool_definitions()
         
         assert isinstance(definitions, list)
-        assert len(definitions) == 10
+        assert len(definitions) == 11
         
         # Check structure of each definition
         for tool_def in definitions:
@@ -1103,6 +1127,7 @@ class TestToolsRegistration:
             "clear_store",
             "reindex_from_images",
             "generate_tsne_plot",
+            "classify_image",
         }
         
         assert set(mcp_server.tools.keys()) == expected_tools
@@ -1126,7 +1151,7 @@ class TestHandleToolCallEdgeCases:
         
         assert "error" in result
         assert "available_tools" in result
-        assert len(result["available_tools"]) == 10
+        assert len(result["available_tools"]) == 11
     
     @pytest.mark.asyncio
     async def test_handle_tool_call_exception_handling(self, mcp_server):
@@ -1244,7 +1269,7 @@ class TestServerInitializationEdgeCases:
         assert server.rag_store is not None
         assert server.image_store is not None
         assert server.searcher is not None
-        assert len(server.tools) == 10
+        assert len(server.tools) == 11
     
     @pytest.mark.asyncio
     async def test_server_encoder_dimension_accessible(self, mcp_server):
@@ -1431,7 +1456,7 @@ class TestToolCallResultFormat:
         assert "error" in result
         assert "available_tools" in result
         assert isinstance(result["available_tools"], list)
-        assert len(result["available_tools"]) == 10
+        assert len(result["available_tools"]) == 11
 
 
 class TestClearStore:

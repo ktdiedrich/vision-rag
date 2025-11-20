@@ -3,7 +3,7 @@
 import asyncio
 import json
 import sys
-from typing import Any, Dict, List, Optional, Callable, Coroutine
+from typing import Any, Dict, List, Optional, Callable, Coroutine, cast
 from pathlib import Path
 
 from mcp.server import Server
@@ -88,6 +88,7 @@ class VisionRAGMCPServer:
             "clear_store": self.clear_store,
             "reindex_from_images": self.reindex_from_images,
             "generate_tsne_plot": self.generate_tsne_plot,
+            "classify_image": self.classify_image,
         }
     
     async def handle_tool_call(self, tool_name: str, arguments: Dict[str, Any]) -> Dict[str, Any]:
@@ -158,6 +159,60 @@ class VisionRAGMCPServer:
             },
             "results": enriched_results,
             "count": len(enriched_results),
+        }
+
+    async def classify_image(
+        self,
+        image_base64: str,
+        n_results: int = 5,
+    ) -> Dict[str, Any]:
+        """
+        Classify a query image using k-NN majority vote over nearest neighbors.
+
+        Args:
+            image_base64: Base64 encoded image
+            n_results: Number of neighbors to use for classification (default: 5)
+
+        Returns:
+            Classification result with predicted label, confidence, and neighbors
+        """
+        # Decode image
+        image = decode_base64_image(image_base64)
+
+        # Perform classification
+        classification: Dict[str, Any] = cast(Dict[str, Any], self.searcher.classify(image, n_results=n_results))
+
+        neighbors = cast(Dict[str, Any], classification.get("neighbors", {}) or {})
+        # Enrich neighbors with human readable labels where possible
+        enriched_neighbors = []
+        for result_id, dist, meta in zip(neighbors.get("ids", []), neighbors.get("distances", []), neighbors.get("metadatas", [])):
+            result = {
+                "id": result_id,
+                "distance": float(dist) if dist is not None else 0.0,
+                "metadata": meta,
+            }
+            if "label" in meta:
+                result["human_readable_label"] = get_human_readable_label(meta["label"], dataset_name=MEDMNIST_DATASET)
+            enriched_neighbors.append(result)
+
+        predicted_label_raw = classification.get("label")
+        predicted_label = None
+        if isinstance(predicted_label_raw, (int, np.integer)):
+            predicted_label = int(predicted_label_raw)
+        predicted_label_name = None
+        if predicted_label is not None:
+            predicted_label_name = get_human_readable_label(predicted_label, dataset_name=MEDMNIST_DATASET)
+
+        return {
+            "query_info": {
+                "image_size": list(image.size),
+                "image_mode": image.mode,
+            },
+            "predicted_label": predicted_label,
+            "predicted_label_name": predicted_label_name,
+            "count": int(classification.get("count", 0) or 0),
+            "confidence": float(classification.get("confidence", 0.0) or 0.0),
+            "neighbors": enriched_neighbors,
         }
     
     async def search_by_label(
@@ -849,6 +904,22 @@ class VisionRAGMCPServer:
                     },
                 },
                 "required": [],
+            },
+            {
+                "name": "classify_image",
+                "description": "Classify a query image using k-NN (majority vote among N nearest neighbors)",
+                "parameters": {
+                    "image_base64": {
+                        "type": "string",
+                        "description": "Base64 encoded image to classify",
+                    },
+                    "n_results": {
+                        "type": "integer",
+                        "description": "Number of neighbors to consider (default: 5)",
+                        "default": 5,
+                    },
+                },
+                "required": ["image_base64"],
             },
         ]
 

@@ -8,7 +8,7 @@ The Model Context Protocol (MCP) is an open protocol that enables seamless integ
 
 ## Available Tools
 
-The Vision RAG MCP server provides 5 tools:
+The Vision RAG MCP server provides many tools for agent interaction, including image search, dataset preloading, and visualization tools.
 
 ### 1. `search_similar_images`
 Search for visually similar medical images using image encoder embeddings (CLIP or DINO).
@@ -71,6 +71,20 @@ List all available labels with human-readable names.
 **Returns:**
 - `labels`: Dictionary mapping label IDs to names
 - `count`: Total number of labels
+
+### 6. `classify_image`
+Classify a query image using k-nearest neighbors (majority vote among nearest neighbors).
+
+**Parameters:**
+- `image_base64` (string, required): Base64 encoded image to classify
+- `n_results` (integer, optional): Number of neighbors to consider (default: 5)
+
+**Returns:**
+- `predicted_label`: Numeric label ID predicted by majority vote
+- `predicted_label_name`: Human-readable label name (if available)
+- `count`: Number of neighbors used for classification
+- `confidence`: Fraction of neighbors that agreed on the predicted label (0.0-1.0)
+- `neighbors`: List of neighbors with `id`, `distance`, and `metadata` (may include `human_readable_label`)
 
 ## Running the MCP Server
 

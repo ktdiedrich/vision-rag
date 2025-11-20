@@ -349,8 +349,12 @@ class RAGVisualizer:
             # Use seaborn palette for many colors
             palette = sns.color_palette("husl", n_colors=num_labels)
         except Exception:
-            # Fallback to matplotlib's tab20
-            palette = plt.get_cmap('tab20').colors[:num_labels]
+            # Fallback to matplotlib's tab20: compute `num_labels` colors from the colormap
+            cmap = plt.get_cmap('tab20')
+            if num_labels == 1:
+                palette = [cmap(0.0)]
+            else:
+                palette = [cmap(i / (num_labels - 1)) for i in range(num_labels)]
 
         cmap = ListedColormap(palette)
         norm = BoundaryNorm(boundaries=list(range(num_labels + 1)), ncolors=num_labels)
