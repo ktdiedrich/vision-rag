@@ -26,9 +26,8 @@ from vision_rag import (
     ImageSearcher,
     RAGVisualizer,
     ImageFileStore,
-    CLIP_MODEL_NAME,
 )
-from vision_rag.config import ENCODER_TYPE, DINO_MODEL_NAME
+from vision_rag.config import ENCODER_TYPE, DINO_MODEL_NAME, NEAREST_NEIGHBORS, MEDMNIST_DATASET, LARGE_SUBSET
 
 
 def main():
@@ -42,9 +41,9 @@ def main():
     print(f"📊 Visualizations will be saved to: {visualizer.output_dir}")
     
     # Step 1: Load data
-    print("\n📥 Loading OrganSMNIST data...")
-    train_images, train_labels = load_medmnist_data(dataset_name="OrganSMNIST", split="train")
-    test_images, test_labels = load_medmnist_data(dataset_name="OrganSMNIST", split="test")
+    print(f"\n📥 Loading {MEDMNIST_DATASET} data...")
+    train_images, train_labels = load_medmnist_data(dataset_name=MEDMNIST_DATASET, split="train")
+    test_images, test_labels = load_medmnist_data(dataset_name=MEDMNIST_DATASET, split="test")
     
     print(f"   Training set: {len(train_images)} images")
     print(f"   Test set: {len(test_images)} images")
@@ -79,8 +78,7 @@ def main():
     print(f"   Embedding dimension: {encoder.embedding_dimension}")
     
     # Use a smaller subset for demonstration to speed up processing
-    subset_size = 1000
-    subset_indices = np.random.choice(len(train_images), size=subset_size, replace=False)
+    subset_indices = np.random.choice(len(train_images), size=LARGE_SUBSET, replace=False)
     subset_images = [get_image_from_array(train_images[i]) for i in subset_indices]
     subset_labels = [int(train_labels[i]) for i in subset_indices]
     
@@ -91,7 +89,7 @@ def main():
     # Step 5: Create and populate RAG store
     print("\n🗃️  Creating RAG store...")
     rag_store = ChromaRAGStore(
-        collection_name="organmnist_demo",
+        collection_name="mnist_demo",
         persist_directory="./chroma_db_demo",
     )
     
@@ -143,10 +141,10 @@ def main():
     
     # Perform searches and save results
     for i, (query_img, query_label) in enumerate(zip(query_images, query_labels)):
-        readable_query_label = get_human_readable_label(query_label)
+        readable_query_label = get_human_readable_label(query_label, dataset_name=MEDMNIST_DATASET)
         print(f"\n   🔍 Search {i+1}: Query image with {readable_query_label}")
         
-        results = searcher.search(query_img, n_results=5)
+        results = searcher.search(query_img, n_results=NEAREST_NEIGHBORS)
         
         # Get retrieved images for visualization
         retrieved_images = []
@@ -171,7 +169,7 @@ def main():
         
         # Print summary with human readable labels
         retrieved_labels = [meta.get('label', meta.get('index', 'unknown')) for meta in results['metadatas']]
-        readable_retrieved_labels = [get_human_readable_label(label) if isinstance(label, int) else str(label) for label in retrieved_labels]
+        readable_retrieved_labels = [get_human_readable_label(label, dataset_name=MEDMNIST_DATASET) if isinstance(label, int) else str(label) for label in retrieved_labels]
         print(f"      Retrieved labels: {readable_retrieved_labels}")
         print(f"      Distances: {[f'{d:.3f}' for d in results['distances']]}")
     

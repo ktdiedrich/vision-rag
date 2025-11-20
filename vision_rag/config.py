@@ -20,6 +20,7 @@ PERSIST_DIRECTORY = os.getenv("VISION_RAG_PERSIST_DIR", "./chroma_db_api")
 _image_size_str = os.getenv("VISION_RAG_IMAGE_SIZE", "224")
 # Default typed bindings for static analysis
 IMAGE_SIZE: int | None = None
+NEAREST_NEIGHBORS: int = int(os.getenv("VISION_RAG_NEAREST_NEIGHBORS", 11))
 try:
     if _image_size_str and _image_size_str.lower() != "none":
         IMAGE_SIZE = int(_image_size_str)
@@ -36,7 +37,8 @@ try:
     MEDMNIST_SIZE = int(_medmnist_size_str)
 except (ValueError, TypeError):
     MEDMNIST_SIZE = 224
-
+SMALL_SUBSET: int = int(os.getenv("VISION_RAG_SMALL_SUBSET", 50))
+LARGE_SUBSET: int = int(os.getenv("VISION_RAG_LARGE_SUBSET", 1000))
 
 # Available MedMNIST datasets with their characteristics
 # Note: image_size reflects the default MEDMNIST_SIZE (224)

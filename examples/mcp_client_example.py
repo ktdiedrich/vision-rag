@@ -87,7 +87,7 @@ async def main():
                 print()
                 
                 # 3. List available labels
-                print("3️⃣  Listing available organ labels...")
+                print("3️⃣  Listing available labels...")
                 labels_result = await session.call_tool("list_available_labels", {})
                 labels = json.loads(labels_result.content[0].text)
                 if labels.get("success"):

@@ -9,12 +9,14 @@ from PIL import Image
 import pandas as pd
 from sklearn.manifold import TSNE
 from sklearn.decomposition import PCA
+from matplotlib.colors import ListedColormap, BoundaryNorm
 
 from .data_loader import get_human_readable_label
 
 
 # Maximum number of labels to show on colorbar before omitting tick labels
 MAX_COLORBAR_LABELS = 11
+from vision_rag.config import MEDMNIST_DATASET  
 
 
 class RAGVisualizer:
@@ -80,7 +82,7 @@ class RAGVisualizer:
                 
                 # Add label if available
                 if labels is not None:
-                    human_label = get_human_readable_label(labels[i])
+                    human_label = get_human_readable_label(labels[i], dataset_name=MEDMNIST_DATASET)
                     ax.set_title(f'{human_label} ({labels[i]})', fontsize=10)
             else:
                 ax.axis('off')
@@ -144,7 +146,7 @@ class RAGVisualizer:
                     ax.imshow(img, cmap='gray' if img.mode == 'L' else None)
                 
                 if labels is not None:
-                    human_label = get_human_readable_label(labels[i])
+                    human_label = get_human_readable_label(labels[i], dataset_name=MEDMNIST_DATASET)
                     ax.set_title(f'Query {i+1}\n{human_label} ({labels[i]})', fontsize=10)
                 else:
                     ax.set_title(f'Query {i+1}', fontsize=10)
@@ -205,7 +207,7 @@ class RAGVisualizer:
         
         query_title = "Query"
         if query_label is not None:
-            human_label = get_human_readable_label(query_label)
+            human_label = get_human_readable_label(query_label, dataset_name=MEDMNIST_DATASET)
             query_title += f"\n{human_label} ({query_label})"
         ax.set_title(query_title, fontsize=10, fontweight='bold', color='red')
         ax.set_xticks([])
@@ -229,7 +231,7 @@ class RAGVisualizer:
             # Create title with metadata
             result_title = f"Result {i+1}"
             if 'label' in metadata:
-                human_label = get_human_readable_label(metadata['label'])
+                human_label = get_human_readable_label(metadata['label'], dataset_name=MEDMNIST_DATASET)
                 result_title += f"\n{human_label} ({metadata['label']})"
             result_title += f"\nDist: {dist:.3f}"
             
@@ -267,7 +269,7 @@ class RAGVisualizer:
         plt.figure(figsize=(10, 6))
         bars = plt.bar(label_counts.index, label_counts.values, alpha=0.8)
         # Use human readable labels for the x-axis
-        tick_labels = [f"{get_human_readable_label(int(lbl))} ({int(lbl)})" for lbl in label_counts.index]
+        tick_labels = [f"{get_human_readable_label(int(lbl), dataset_name=MEDMNIST_DATASET)} ({int(lbl)})" for lbl in label_counts.index]
         plt.xticks(label_counts.index, tick_labels, rotation=45, ha='right')
         plt.xlabel('Label (organ)')
         plt.ylabel('Count')
@@ -332,16 +334,34 @@ class RAGVisualizer:
         
         # Create scatter plot
         plt.figure(figsize=(10, 8))
-        scatter = plt.scatter(embedding_2d[:, 0], embedding_2d[:, 1], 
-                            c=labels, cmap='tab10', alpha=0.7)
-        
-        # Create colorbar with human readable labels
-        cbar = plt.colorbar(scatter, label='Organ Label')
+
         unique_labels = sorted(list(set(labels)))
-        if len(unique_labels) <= MAX_COLORBAR_LABELS:
-            cbar.set_ticks(unique_labels)
-            readable_labels = [get_human_readable_label(label) for label in unique_labels]
-            cbar.set_ticklabels(readable_labels)
+        num_labels = len(unique_labels)
+        if num_labels == 0:
+            raise ValueError("No labels provided for embedding visualization")
+
+        # Map labels to consecutive indices so we can create a discrete colormap
+        label_to_idx = {lab: i for i, lab in enumerate(unique_labels)}
+        mapped_labels = [label_to_idx[l] for l in labels]
+
+        # Build a colormap with as many distinct colors as unique labels
+        try:
+            # Use seaborn palette for many colors
+            palette = sns.color_palette("husl", n_colors=num_labels)
+        except Exception:
+            # Fallback to matplotlib's tab20
+            palette = plt.get_cmap('tab20').colors[:num_labels]
+
+        cmap = ListedColormap(palette)
+        norm = BoundaryNorm(boundaries=list(range(num_labels + 1)), ncolors=num_labels)
+
+        scatter = plt.scatter(embedding_2d[:, 0], embedding_2d[:, 1],
+                              c=mapped_labels, cmap=cmap, norm=norm, alpha=0.7)
+
+        # Create a discrete colorbar with human-readable labels
+        cbar = plt.colorbar(scatter, ticks=list(range(num_labels)), label='Label')
+        readable_labels = [get_human_readable_label(label, dataset_name=MEDMNIST_DATASET) for label in unique_labels]
+        cbar.set_ticklabels(readable_labels)
         
         plt.xlabel(f'{method.upper()} 1')
         plt.ylabel(f'{method.upper()} 2')
