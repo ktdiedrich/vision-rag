@@ -23,8 +23,9 @@ from vision_rag import (
     ImageSearcher,
     RAGVisualizer,
     ImageFileStore,
-    CLIP_MODEL_NAME
 )
+
+from vision_rag.config import DEMO_DATASET
 
 
 def main():
@@ -38,9 +39,9 @@ def main():
     print(f"Visualizations will be saved to: {visualizer.output_dir}")
     
     # Load small subset of data for quick demo
-    print("\n📥 Loading OrganSMNIST data...")
-    train_images, train_labels = load_medmnist_data(dataset_name="OrganSMNIST", split="train")
-    test_images, test_labels = load_medmnist_data(dataset_name="OrganSMNIST", split="test")
+    print(f"\n📥 Loading {DEMO_DATASET} data...")
+    train_images, train_labels = load_medmnist_data(dataset_name=DEMO_DATASET, split="train")
+    test_images, test_labels = load_medmnist_data(dataset_name=DEMO_DATASET, split="test")
     
     # Use small subsets for demonstration
     train_subset = [(train_images[i], int(train_labels[i])) for i in range(50)]

@@ -37,6 +37,7 @@ try:
     MEDMNIST_SIZE = int(_medmnist_size_str)
 except (ValueError, TypeError):
     MEDMNIST_SIZE = 224
+DEMO_DATASET: str = os.getenv("VISION_RAG_DEMO_DATASET", "OrganSMNIST")
 
 
 # Available MedMNIST datasets with their characteristics

@@ -27,7 +27,7 @@ from vision_rag import (
     RAGVisualizer,
     ImageFileStore,
 )
-from vision_rag.config import ENCODER_TYPE, DINO_MODEL_NAME, NEAREST_NEIGHBORS
+from vision_rag.config import ENCODER_TYPE, DINO_MODEL_NAME, NEAREST_NEIGHBORS, DEMO_DATASET
 
 
 def main():
@@ -41,9 +41,9 @@ def main():
     print(f"📊 Visualizations will be saved to: {visualizer.output_dir}")
     
     # Step 1: Load data
-    print("\n📥 Loading OrganSMNIST data...")
-    train_images, train_labels = load_medmnist_data(dataset_name="OrganSMNIST", split="train")
-    test_images, test_labels = load_medmnist_data(dataset_name="OrganSMNIST", split="test")
+    print(f"\n📥 Loading {DEMO_DATASET} data...")
+    train_images, train_labels = load_medmnist_data(dataset_name=DEMO_DATASET, split="train")
+    test_images, test_labels = load_medmnist_data(dataset_name=DEMO_DATASET, split="test")
     
     print(f"   Training set: {len(train_images)} images")
     print(f"   Test set: {len(test_images)} images")
