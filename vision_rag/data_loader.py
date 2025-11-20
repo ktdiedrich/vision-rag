@@ -12,18 +12,16 @@ from .config import MEDMNIST_DATASET, MEDMNIST_SIZE, get_dataset_config
 DEFAULT_DATA_DIR = Path(__file__).parent.parent / "data"
 
 
-def download_medmnist(dataset_name: str = None, root: Union[Path, str, None] = None, size: int = None) -> None:
+def download_medmnist(dataset_name: str, root: Union[Path, str, None] = None, size: int = None) -> None:
     """
     Download a MedMNIST dataset if it doesn't already exist.
-    
+
     Args:
         dataset_name: Name of the MedMNIST dataset (e.g., 'OrganSMNIST', 'PathMNIST').
-                     If None, uses VISION_RAG_DATASET from environment.
+                      This argument is required and must be provided by the caller.
         root: Root directory to save the dataset. If None, uses default permanent directory.
         size: Image size to download (28, 64, 128, or 224). If None, uses MEDMNIST_SIZE from config (default: 224).
     """
-    if dataset_name is None:
-        dataset_name = MEDMNIST_DATASET
     
     if root is None:
         root = DEFAULT_DATA_DIR
@@ -56,7 +54,7 @@ def download_medmnist(dataset_name: str = None, root: Union[Path, str, None] = N
 
 
 def load_medmnist_data(
-    dataset_name: str = None,
+    dataset_name: str,
     split: str = "train",
     root: Union[Path, str, None] = None,
     size: int = None
@@ -66,7 +64,7 @@ def load_medmnist_data(
     
     Args:
         dataset_name: Name of the MedMNIST dataset (e.g., 'OrganSMNIST', 'PathMNIST').
-                     If None, uses VISION_RAG_DATASET from environment.
+                     This argument is required and must be provided by the caller.
         split: Dataset split ('train', 'test', or 'val')
         root: Root directory where dataset is saved. If None, uses default permanent directory.
         size: Image size to load (28, 64, 128, or 224). If None, uses MEDMNIST_SIZE from config (default: 224).
@@ -75,12 +73,9 @@ def load_medmnist_data(
         Tuple of (images, labels) where images is an array of shape (N, H, W) or (N, H, W, C)
         and labels is an array of shape (N,)
     """
-    if dataset_name is None:
-        dataset_name = MEDMNIST_DATASET
-    
     if root is None:
         root = DEFAULT_DATA_DIR
-    
+
     if size is None:
         size = MEDMNIST_SIZE
     
@@ -121,12 +116,12 @@ def get_image_from_array(image_array: np.ndarray) -> Image.Image:
         raise ValueError(f"Unsupported image array shape: {image_array.shape}")
 
 
-def get_medmnist_label_names(dataset_name: str = None, root: Union[Path, str, None] = None, size: int = None) -> dict:
+def get_medmnist_label_names(dataset_name: str, root: Union[Path, str, None] = None, size: int = None) -> dict:
     """
     Get human readable label names for a MedMNIST dataset.
     
     Args:
-        dataset_name: Name of the MedMNIST dataset. If None, uses VISION_RAG_DATASET from environment.
+        dataset_name: Name of the MedMNIST dataset. This argument is required.
         root: Root directory where dataset is saved. If None, uses default permanent directory.
         size: Image size (28, 64, 128, or 224). If None, uses MEDMNIST_SIZE from config (default: 224).
     
@@ -136,12 +131,9 @@ def get_medmnist_label_names(dataset_name: str = None, root: Union[Path, str, No
     Raises:
         FileNotFoundError: If the dataset file doesn't exist and needs to be downloaded
     """
-    if dataset_name is None:
-        dataset_name = MEDMNIST_DATASET
-    
     if root is None:
         root = DEFAULT_DATA_DIR
-    
+
     if size is None:
         size = MEDMNIST_SIZE
     
@@ -173,13 +165,13 @@ def get_medmnist_label_names(dataset_name: str = None, root: Union[Path, str, No
         return {i: f"Class {i}" for i in range(n_classes)}
 
 
-def get_human_readable_label(label_index: int, dataset_name: str = None, root: str = None, size: int = None) -> str:
+def get_human_readable_label(label_index: int, dataset_name: str, root: str = None, size: int = None) -> str:
     """
     Get human readable label for a given label index.
     
     Args:
         label_index: Numeric label index
-        dataset_name: Name of the MedMNIST dataset. If None, uses VISION_RAG_DATASET from environment.
+        dataset_name: Name of the MedMNIST dataset. This argument is required.
         root: Root directory where dataset is saved. If None, uses default permanent directory.
         size: Image size (28, 64, 128, or 224). If None, uses MEDMNIST_SIZE from config (default: 224).
         

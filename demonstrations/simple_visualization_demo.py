@@ -25,7 +25,7 @@ from vision_rag import (
     ImageFileStore,
 )
 
-from vision_rag.config import DEMO_DATASET, SMALL_SUBSET
+from vision_rag.config import MEDMNIST_DATASET, SMALL_SUBSET
 
 
 def main():
@@ -39,9 +39,9 @@ def main():
     print(f"Visualizations will be saved to: {visualizer.output_dir}")
     
     # Load small subset of data for quick demo
-    print(f"\n📥 Loading {DEMO_DATASET} data...")
-    train_images, train_labels = load_medmnist_data(dataset_name=DEMO_DATASET, split="train")
-    test_images, test_labels = load_medmnist_data(dataset_name=DEMO_DATASET, split="test")
+    print(f"\n📥 Loading {MEDMNIST_DATASET} data...")
+    train_images, train_labels = load_medmnist_data(dataset_name=MEDMNIST_DATASET, split="train")
+    test_images, test_labels = load_medmnist_data(dataset_name=MEDMNIST_DATASET, split="test")
     
     # Use small subsets for demonstration
     train_subset = [(train_images[i], int(train_labels[i])) for i in range(SMALL_SUBSET)]
@@ -123,7 +123,7 @@ def main():
     print("\n🎯 Step 5: Performing searches and visualizing results...")
 
     for i, (query_img, query_label) in enumerate(zip(query_images, query_labels)):
-        query_name = get_human_readable_label(query_label)
+        query_name = get_human_readable_label(query_label, dataset_name=MEDMNIST_DATASET)
         print(f"\n  Search {i+1}: Query with label {query_label} ({query_name})")
         
         # Perform search
@@ -151,7 +151,7 @@ def main():
         
         # Print summary
         retrieved_labels = [meta['label'] for meta in results['metadatas']]
-        retrieved_names = [get_human_readable_label(label) for label in retrieved_labels]
+        retrieved_names = [get_human_readable_label(label, dataset_name=MEDMNIST_DATASET) for label in retrieved_labels]
         distances = [f"{d:.3f}" for d in results['distances']]
         print(f"  Retrieved: {[f'{name} ({label})' for name, label in zip(retrieved_names, retrieved_labels)]}")
         print(f"  Distances: {distances}")

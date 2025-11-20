@@ -7,7 +7,7 @@ from typing import Dict, Any
 # Environment variable configuration
 CLIP_MODEL_NAME = os.getenv("VISION_RAG_CLIP_MODEL", "clip-ViT-B-32")
 DINO_MODEL_NAME = os.getenv("VISION_RAG_DINO_MODEL", "facebook/dino-vits8")
-MEDMNIST_DATASET = os.getenv("VISION_RAG_DATASET", "OrganSMNIST")
+MEDMNIST_DATASET = os.getenv("VISION_RAG_DATASET", "PneumoniaMNIST")
 COLLECTION_NAME = os.getenv("VISION_RAG_COLLECTION_NAME", "vision_rag")
 # Default encoder type for images. Options: 'clip' or 'dino' (default)
 # DINO tends to produce more distinct clusters in embedding space and is the
@@ -37,7 +37,6 @@ try:
     MEDMNIST_SIZE = int(_medmnist_size_str)
 except (ValueError, TypeError):
     MEDMNIST_SIZE = 224
-DEMO_DATASET: str = os.getenv("VISION_RAG_DEMO_DATASET", "OrganSMNIST")
 SMALL_SUBSET: int = int(os.getenv("VISION_RAG_SMALL_SUBSET", 50))
 LARGE_SUBSET: int = int(os.getenv("VISION_RAG_LARGE_SUBSET", 1000))
 

@@ -64,7 +64,7 @@ Get statistics about the vision RAG store.
 - `embedding_dimension`: Vector dimension
 
 ### 5. `list_available_labels`
-List all available organ labels with human-readable names.
+List all available labels with human-readable names.
 
 **Parameters:** None
 

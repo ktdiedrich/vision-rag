@@ -265,8 +265,8 @@ print(f"Configured encoder type: {ENCODER_TYPE} (defaults to 'dino').")
 print(f"If using CLIP: set VISION_RAG_CLIP_MODEL or if using DINO: set VISION_RAG_DINO_MODEL to override the model name.")
 
 # Download and load using environment variable defaults
-download_medmnist()  # Downloads ChestMNIST
-train_images, train_labels = load_medmnist_data(split="train")  # Loads ChestMNIST
+download_medmnist("ChestMNIST")  # Downloads ChestMNIST
+train_images, train_labels = load_medmnist_data(dataset_name=MEDMNIST_DATASET, split="train")  # Loads ChestMNIST
 
 # Load test data
 test_images, test_labels = load_medmnist_data(dataset_name="OrganSMNIST", split="test", root="./data")
