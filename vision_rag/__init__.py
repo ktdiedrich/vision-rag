@@ -28,6 +28,7 @@ from .visualization import RAGVisualizer
 __all__ = [
     # Configuration
     "CLIP_MODEL_NAME",
+    "MEDMNIST_DATASET_DEFAULT",
     "MEDMNIST_DATASET",
     "COLLECTION_NAME",
     "PERSIST_DIRECTORY",

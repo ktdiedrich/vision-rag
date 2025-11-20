@@ -3,11 +3,11 @@
 import os
 from typing import Dict, Any
 
-
+MEDMNIST_DATASET_DEFAULT: str = "PneumoniaMNIST"
 # Environment variable configuration
 CLIP_MODEL_NAME = os.getenv("VISION_RAG_CLIP_MODEL", "clip-ViT-B-32")
 DINO_MODEL_NAME = os.getenv("VISION_RAG_DINO_MODEL", "facebook/dino-vits8")
-MEDMNIST_DATASET = os.getenv("VISION_RAG_DATASET", "OrganSMNIST")
+MEDMNIST_DATASET = os.getenv("VISION_RAG_DATASET", MEDMNIST_DATASET_DEFAULT)
 COLLECTION_NAME = os.getenv("VISION_RAG_COLLECTION_NAME", "vision_rag")
 # Default encoder type for images. Options: 'clip' or 'dino' (default)
 # DINO tends to produce more distinct clusters in embedding space and is the

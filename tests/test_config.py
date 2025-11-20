@@ -4,6 +4,7 @@ import pytest
 from vision_rag.config import (
     CLIP_MODEL_NAME,
     MEDMNIST_DATASET,
+    MEDMNIST_DATASET_DEFAULT,
     get_dataset_config,
     list_available_datasets,
     AVAILABLE_DATASETS,
@@ -13,7 +14,7 @@ from vision_rag.config import (
 def test_default_config_values():
     """Test default configuration values."""
     assert CLIP_MODEL_NAME == "clip-ViT-B-32"
-    assert MEDMNIST_DATASET == "OrganSMNIST"
+    assert MEDMNIST_DATASET == MEDMNIST_DATASET_DEFAULT
 
 
 def test_list_available_datasets():
@@ -29,8 +30,7 @@ def test_list_available_datasets():
 def test_get_dataset_config_default():
     """Test getting dataset config with default."""
     config = get_dataset_config()
-    assert config["class_name"] == "OrganSMNIST"
-    assert config["n_classes"] == 11
+    assert config["class_name"] == MEDMNIST_DATASET_DEFAULT
     assert config["image_size"] == 224
 
 
