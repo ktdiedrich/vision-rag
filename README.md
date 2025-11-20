@@ -607,6 +607,17 @@ async def search_images():
         results = response.json()
         print(f"Found {results['count']} similar images")
 
+        # Classify a query image using REST `POST /classify`
+        classify_response = await client.post(
+            "http://localhost:8001/classify",
+            json={
+                "image_base64": your_base64_image,
+                "n_results": 5
+            }
+        )
+        classify_result = classify_response.json()
+        print(f"Predicted label: {classify_result['predicted_label']}, name: {classify_result.get('predicted_label_name')}, confidence: {classify_result.get('confidence')}")
+
 asyncio.run(search_images())
 ```
 
@@ -623,6 +634,12 @@ server = VisionRAGMCPServer()
 # Call tools via MCP
 result = await server.handle_tool_call(
     "search_similar_images",
+    {"image_base64": "...", "n_results": 5}
+)
+
+# Classify a query image via MCP
+classification = await server.handle_tool_call(
+    "classify_image",
     {"image_base64": "...", "n_results": 5}
 )
 

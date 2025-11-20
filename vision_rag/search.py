@@ -1,6 +1,6 @@
 """Image search functionality using RAG store."""
 
-from typing import List, Union, Dict
+from typing import List, Union, Dict, Any
 import json
 from collections import Counter, defaultdict
 import numpy as np
@@ -88,7 +88,7 @@ class ImageSearcher:
         self,
         query_image: Union[Image.Image, np.ndarray],
         n_results: int = 5,
-    ) -> Dict[str, Union[int, float, dict]]:
+    ) -> Dict[str, Any]:
         """
         Classify a query image using k-nearest neighbors (majority vote).
 

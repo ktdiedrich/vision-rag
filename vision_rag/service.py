@@ -1,6 +1,6 @@
 """FastAPI service for vision RAG system."""
 
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, cast
 import io
 import threading
 import traceback
@@ -566,9 +566,9 @@ async def classify_image(request: ClassifyRequest):
         image = decode_base64_image(request.image_base64)
 
         # Perform classification
-        classification = searcher.classify(image, n_results=request.n_results)
+        classification: Dict[str, Any] = cast(Dict[str, Any], searcher.classify(image, n_results=request.n_results))
 
-        neighbors = classification.get("neighbors", {}) or {}
+        neighbors = cast(Dict[str, Any], classification.get("neighbors", {}) or {})
         # Format neighbors as SearchResult entries
         neighbor_results = []
         for idx, (rid, dist, meta) in enumerate(
@@ -587,9 +587,12 @@ async def classify_image(request: ClassifyRequest):
                 )
             )
 
-        predicted_label = classification.get("label")
+        predicted_label_raw = classification.get("label")
+        predicted_label: Optional[int] = None
+        if isinstance(predicted_label_raw, (int, np.integer)):
+            predicted_label = int(predicted_label_raw)
         predicted_label_name = None
-        if isinstance(predicted_label, int):
+        if predicted_label is not None:
             predicted_label_name = get_human_readable_label(predicted_label, dataset_name=MEDMNIST_DATASET)
 
         return ClassifyResponse(
@@ -600,8 +603,8 @@ async def classify_image(request: ClassifyRequest):
             },
             predicted_label=predicted_label,
             predicted_label_name=predicted_label_name,
-            count=int(classification.get("count", 0)),
-            confidence=float(classification.get("confidence", 0.0)),
+            count=int(classification.get("count", 0) or 0),
+            confidence=float(classification.get("confidence", 0.0) or 0.0),
             neighbors=neighbor_results,
         )
 
