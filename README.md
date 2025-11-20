@@ -266,7 +266,7 @@ print(f"If using CLIP: set VISION_RAG_CLIP_MODEL or if using DINO: set VISION_RA
 
 # Download and load using environment variable defaults
 download_medmnist("ChestMNIST")  # Downloads ChestMNIST
-train_images, train_labels = load_medmnist_data(dataset_name=MEDMNIST_DATASET, split="train")  # Loads ChestMNIST
+train_images, train_labels = load_medmnist_data(dataset_name="ChestMNIST", split="train")  # Loads ChestMNIST
 
 # Load test data
 test_images, test_labels = load_medmnist_data(dataset_name="OrganSMNIST", split="test", root="./data")
