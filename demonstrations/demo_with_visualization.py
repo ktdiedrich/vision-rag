@@ -298,6 +298,26 @@ def main():
     per_label_large_png = visualizer.plot_per_label_metrics(eval_metrics["per_label"], labels_order=eval_metrics["labels"], filename="07_per_label_metrics_large.png")
     print(f"   ✅ Saved large confusion matrix plot: {cm_large_png}")
     print(f"   ✅ Saved large per-label metrics plot: {per_label_large_png}")
+
+    # Compute continuous scores for ROC/PR (binary case: treat label=1 as positive)
+    # For k-NN we estimate the positive-class score as fraction of neighbors that are positive.
+    # For predictions with predicted_label == 1, use confidence; otherwise use 1 - confidence.
+    y_true = eval_true_labels_list
+    y_scores = []
+    for r in eval_results:
+        pred = r.get("predicted_label")
+        conf = r.get("confidence", 0.0)
+        if pred == 1:
+            score = conf
+        else:
+            score = 1.0 - conf
+        y_scores.append(score)
+
+    # Plot ROC and PR curves for the LARGE_SUBSET evaluation
+    roc_png = visualizer.plot_roc_curve(y_true, y_scores, pos_label=1, filename="08_roc_curve_large.png")
+    pr_png = visualizer.plot_precision_recall_curve(y_true, y_scores, pos_label=1, filename="09_pr_curve_large.png")
+    print(f"   ✅ Saved large ROC curve plot: {roc_png}")
+    print(f"   ✅ Saved large Precision-Recall plot: {pr_png}")
     
 
 if __name__ == "__main__":

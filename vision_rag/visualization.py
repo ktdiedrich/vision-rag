@@ -9,6 +9,7 @@ from PIL import Image
 import pandas as pd
 from sklearn.manifold import TSNE
 from sklearn.decomposition import PCA
+from sklearn.metrics import roc_curve, auc, precision_recall_curve, average_precision_score
 from matplotlib.colors import ListedColormap, BoundaryNorm
 
 from .data_loader import get_human_readable_label
@@ -532,7 +533,8 @@ class RAGVisualizer:
         except Exception:
             # Fallback to original labels
             tick_names = df["label"].astype(str).tolist()
-        ax.set_xticklabels(tick_names)
+        ax.set_xticks(list(range(len(tick_names))))
+        ax.set_xticklabels(tick_names, rotation=45, ha='right')
         plt.tight_layout()
         # Optionally annotate bar values
         if annotate:
@@ -546,6 +548,95 @@ class RAGVisualizer:
         plt.savefig(output_path, dpi=150, bbox_inches='tight')
         plt.close()
         return str(output_path)
+
+    def plot_roc_curve(
+        self,
+        true_labels: List[int],
+        scores: List[float],
+        pos_label: int = 1,
+        filename: str = "roc_curve.png",
+        title: str = "ROC Curve",
+        figsize: tuple = (8, 6),
+    ) -> str:
+        """
+        Plot ROC curve (binary) and save to file.
+
+        Args:
+            true_labels: List of ground truth labels (binary)
+            scores: List of prediction scores for the positive class
+            pos_label: Label considered positive
+            filename: Output filename
+            title: Plot title
+            figsize: Figure size
+
+        Returns:
+            Path to saved image
+        """
+        y_true = np.array(true_labels)
+        y_scores = np.array(scores)
+
+        fpr, tpr, _ = roc_curve(y_true, y_scores, pos_label=pos_label)
+        roc_auc = auc(fpr, tpr)
+
+        plt.figure(figsize=figsize)
+        plt.plot(fpr, tpr, color='darkorange', lw=2, label=f'ROC curve (area = {roc_auc:.2f})')
+        plt.plot([0, 1], [0, 1], color='navy', lw=1, linestyle='--')
+        plt.xlim([0.0, 1.0])
+        plt.ylim([0.0, 1.05])
+        plt.xlabel('False Positive Rate')
+        plt.ylabel('True Positive Rate')
+        plt.title(title, fontsize=14, fontweight='bold')
+        plt.legend(loc='lower right')
+        plt.grid(True, alpha=0.3)
+        plt.tight_layout()
+        out_path = self.output_dir / filename
+        plt.savefig(out_path, dpi=150, bbox_inches='tight')
+        plt.close()
+        return str(out_path)
+
+    def plot_precision_recall_curve(
+        self,
+        true_labels: List[int],
+        scores: List[float],
+        pos_label: int = 1,
+        filename: str = "pr_curve.png",
+        title: str = "Precision-Recall Curve",
+        figsize: tuple = (8, 6),
+    ) -> str:
+        """
+        Plot Precision-Recall curve (binary) and save to file.
+
+        Args:
+            true_labels: List of ground truth labels (binary)
+            scores: List of prediction scores for the positive class
+            pos_label: Label considered positive
+            filename: Output filename
+            title: Plot title
+            figsize: Figure size
+
+        Returns:
+            Path to saved image
+        """
+        y_true = np.array(true_labels)
+        y_scores = np.array(scores)
+
+        precision, recall, _ = precision_recall_curve(y_true, y_scores, pos_label=pos_label)
+        ap = average_precision_score(y_true, y_scores)
+
+        plt.figure(figsize=figsize)
+        plt.plot(recall, precision, color='darkgreen', lw=2, label=f'AP = {ap:.2f}')
+        plt.xlim([0.0, 1.0])
+        plt.ylim([0.0, 1.05])
+        plt.xlabel('Recall')
+        plt.ylabel('Precision')
+        plt.title(title, fontsize=14, fontweight='bold')
+        plt.legend(loc='lower left')
+        plt.grid(True, alpha=0.3)
+        plt.tight_layout()
+        out_path = self.output_dir / filename
+        plt.savefig(out_path, dpi=150, bbox_inches='tight')
+        plt.close()
+        return str(out_path)
 
     def save_evaluation_results(
         self,
