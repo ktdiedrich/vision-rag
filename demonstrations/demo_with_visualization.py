@@ -128,7 +128,7 @@ def main():
     print("\n🔍 Performing searches and visualizing results...")
     searcher = ImageSearcher(encoder=encoder, rag_store=rag_store)
     
-    # Select some test images for search queries
+    # Select some test images for search query visualizations (5 images only)
     query_indices = np.random.choice(len(test_images), size=5, replace=False)
     query_images = [get_image_from_array(test_images[i]) for i in query_indices]
     query_labels = [int(test_labels[i]) for i in query_indices]
@@ -243,6 +243,61 @@ def main():
     per_label_png = visualizer.plot_per_label_metrics(metrics["per_label"], labels_order=metrics["labels"], filename="06_per_label_metrics.png")
     print(f"   ✅ Saved confusion matrix plot: {cm_png}")
     print(f"   ✅ Saved per-label metrics plot: {per_label_png}")
+    # ------------------------------------------------------------------
+    # Now evaluate a larger subset of test images (LARGE_SUBSET) and save metrics
+    # ------------------------------------------------------------------
+    print(f"\n🔎 Running full evaluation on {LARGE_SUBSET} test images and saving metrics/plots...")
+    eval_indices = np.random.choice(len(test_images), size=min(LARGE_SUBSET, len(test_images)), replace=False)
+    eval_images = [get_image_from_array(test_images[i]) for i in eval_indices]
+    eval_true_labels = [int(test_labels[i]) for i in eval_indices]
+
+    # Classify each eval image using k-NN and collect results
+    eval_results = []
+    for i, (img, lbl) in enumerate(zip(eval_images, eval_true_labels)):
+        classification = searcher.classify(img, n_results=NEAREST_NEIGHBORS)
+        predicted_label = classification.get("label")
+        confidence = classification.get("confidence")
+        eval_results.append({
+            "index": int(i),
+            "true_label": int(lbl) if isinstance(lbl, (int, np.integer)) else lbl,
+            "predicted_label": int(predicted_label) if isinstance(predicted_label, (int, np.integer)) else predicted_label,
+            "confidence": float(confidence) if confidence is not None else 0.0,
+            "correct": bool(predicted_label == lbl),
+        })
+
+    # Save eval results as CSV and JSON
+    eval_csv_path = visualizer.output_dir / "evaluation_large_results.csv"
+    eval_json_path = visualizer.output_dir / "evaluation_large_results.json"
+    eval_csv_fields = ["index", "true_label", "predicted_label", "confidence", "correct"]
+    with open(eval_csv_path, "w", newline="", encoding="utf-8") as csvfile:
+        writer = csv.DictWriter(csvfile, fieldnames=eval_csv_fields)
+        writer.writeheader()
+        for row in eval_results:
+            writer.writerow({k: row.get(k) for k in eval_csv_fields})
+    with open(eval_json_path, "w", encoding="utf-8") as jf:
+        json.dump(eval_results, jf, indent=2)
+
+    print(f"   ✅ Saved eval classification results to: {eval_csv_path} and {eval_json_path}")
+
+    # Compute evaluation metrics and save using evaluate_classification with autosave
+    eval_true_labels_list = [r["true_label"] for r in eval_results]
+    eval_predicted_labels_list = [r["predicted_label"] for r in eval_results]
+    eval_metrics = searcher.evaluate_classification(
+        true_labels=eval_true_labels_list,
+        predicted_labels=eval_predicted_labels_list,
+        save_results=True,
+        output_dir=str(visualizer.output_dir),
+        filename_prefix="07_eval_large",
+        to_csv=True,
+        to_json=True,
+        to_csv_matrix=True,
+    )
+
+    # Create plots for the large evaluation
+    cm_large_png = visualizer.plot_confusion_matrix(eval_metrics["confusion"], labels=eval_metrics["labels"], filename="07_confusion_matrix_large.png")
+    per_label_large_png = visualizer.plot_per_label_metrics(eval_metrics["per_label"], labels_order=eval_metrics["labels"], filename="07_per_label_metrics_large.png")
+    print(f"   ✅ Saved large confusion matrix plot: {cm_large_png}")
+    print(f"   ✅ Saved large per-label metrics plot: {per_label_large_png}")
     
 
 if __name__ == "__main__":

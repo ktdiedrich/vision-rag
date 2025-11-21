@@ -469,6 +469,7 @@ class RAGVisualizer:
         filename: str = "per_label_metrics.png",
         title: str = "Per-label Precision/Recall/F1",
         figsize: tuple = (10, 6),
+        annotate: bool = True,
     ) -> str:
         """
         Plot per-label precision, recall, and F1 in a grouped bar chart.
@@ -505,6 +506,14 @@ class RAGVisualizer:
         plt.title(title, fontsize=14, fontweight='bold')
         plt.legend(title="Metric")
         plt.tight_layout()
+        # Optionally annotate bar values
+        if annotate:
+            for p in ax.patches:
+                # p is a Rectangle patch; get its height and annotate
+                height = p.get_height()
+                if np.isfinite(height):
+                    ax.annotate(f"{height:.2f}", (p.get_x() + p.get_width() / 2., height),
+                                ha='center', va='bottom', fontsize=8, color='black', rotation=0)
         output_path = self.output_dir / filename
         plt.savefig(output_path, dpi=150, bbox_inches='tight')
         plt.close()
