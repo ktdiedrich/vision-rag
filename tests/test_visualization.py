@@ -513,6 +513,18 @@ def test_plot_confusion_matrix_normalized(temp_output_dir):
     assert "test_confusion_norm.png" in output_path
 
 
+def test_plot_roc_and_pr_curves(temp_output_dir):
+    """Test ROC and Precision-Recall plotting for binary labels with scores."""
+    visualizer = RAGVisualizer(output_dir=temp_output_dir)
+    # Simple binary case
+    true_labels = [0, 0, 1, 1]
+    scores = [0.1, 0.4, 0.35, 0.8]
+    roc_path = visualizer.plot_roc_curve(true_labels, scores, pos_label=1, filename="test_roc.png")
+    pr_path = visualizer.plot_precision_recall_curve(true_labels, scores, pos_label=1, filename="test_pr.png")
+    assert Path(roc_path).exists()
+    assert Path(pr_path).exists()
+
+
 def test_plot_per_label_metrics(temp_output_dir):
     """Test plotting per-label metrics and saving PNG."""
     visualizer = RAGVisualizer(output_dir=temp_output_dir)
