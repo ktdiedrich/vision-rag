@@ -532,7 +532,8 @@ class RAGVisualizer:
         except Exception:
             # Fallback to original labels
             tick_names = df["label"].astype(str).tolist()
-        ax.set_xticklabels(tick_names)
+        ax.set_xticks(list(range(len(tick_names))))
+        ax.set_xticklabels(tick_names, rotation=45, ha='right')
         plt.tight_layout()
         # Optionally annotate bar values
         if annotate:
