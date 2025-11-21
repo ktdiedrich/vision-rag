@@ -4,6 +4,7 @@ import pytest
 import json
 import numpy as np
 from PIL import Image
+from pathlib import Path
 import tempfile
 import shutil
 
@@ -305,3 +306,123 @@ def test_classify_tie_breaker_chooses_smallest_avg_distance(temp_db_dir):
     classification = searcher.classify(np.array([1.5]), n_results=4)
     # Counts tie (2 each); average distances: label 0 mean high, label 1 mean lower => predicted label 1
     assert classification["label"] == 1
+
+
+def test_evaluate_classification_confusion_and_metrics():
+    """Test confusion matrix and metrics computation with explicit labels and predictions."""
+    from vision_rag.search import ImageSearcher
+
+    fake_searcher = ImageSearcher.__new__(ImageSearcher)
+    # We only need the helper method; no encoder or rag_store required
+
+    true_labels = [0, 0, 1, 1]
+    predicted_labels = [0, 1, 1, 1]
+
+    metrics = ImageSearcher.compute_confusion_and_metrics(fake_searcher, true_labels, predicted_labels)
+
+    # Expect confusion counts: true0->pred0=1, true0->pred1=1, true1->pred1=2
+    confusion = metrics["confusion"]
+    assert confusion[0][0] == 1
+    assert confusion[0][1] == 1
+    assert confusion[1][1] == 2
+
+    # Accuracy: 3/4 = 0.75
+    assert abs(metrics["accuracy"] - 0.75) < 1e-6
+    # Micro metrics should be 0.75
+    assert abs(metrics["micro"]["precision"] - 0.75) < 1e-6
+    assert abs(metrics["micro"]["recall"] - 0.75) < 1e-6
+    assert abs(metrics["micro"]["f1"] - 0.75) < 1e-6
+    # Macro precision, recall, f1 close to expected values
+    assert abs(metrics["macro"]["precision"] - ((1.0 + 2/3) / 2)) < 1e-6
+    assert abs(metrics["macro"]["recall"] - ((0.5 + 1.0) / 2)) < 1e-6
+
+    per_label = metrics["per_label"]
+    # Precision for label 0: tp=1, fp=0 -> 1.0
+    assert abs(per_label[0]["precision"] - 1.0) < 1e-6
+    # Recall for label 0: tp=1, fn=1 -> 0.5
+    assert abs(per_label[0]["recall"] - 0.5) < 1e-6
+    # For label 1 precision = 2/(1+2)=2/3
+    assert abs(per_label[1]["precision"] - (2/3)) < 1e-6
+
+
+def test_evaluate_classification_batch_using_queries(temp_db_dir):
+    """End-to-end evaluation using actual batch_classify on a simple store."""
+    rag = ChromaRAGStore(collection_name="test_eval_batch", persist_directory=temp_db_dir)
+
+    embeddings = np.array([
+        [1.0, 0.0],
+        [0.95, 0.0],
+        [10.0, 10.0],
+        [10.1, 10.0],
+    ], dtype=float)
+    metadatas = [
+        {"label": 0},
+        {"label": 0},
+        {"label": 1},
+        {"label": 1},
+    ]
+
+    rag.add_embeddings(embeddings, metadatas=metadatas)
+
+    fake_encoder = FakeEncoder(embedding_dim=2)
+    searcher = ImageSearcher(encoder=fake_encoder, rag_store=rag)
+
+    queries = [np.array([1.05, 0.0]), np.array([10.05, 10.0]), np.array([1.2, 0.0])]
+    true_labels = [0, 1, 0]
+
+    metrics = searcher.evaluate_classification(query_images=queries, true_labels=true_labels, n_results=3)
+
+    # We expect at least an overall accuracy in [0,1]. For this simple set, all should classify correct
+    assert 0.0 <= metrics["accuracy"] <= 1.0
+    # Confusion matrix shape and label presence
+    confusion = metrics["confusion"]
+    assert 0 in confusion and 1 in confusion
+    # Also test the array format option
+    matrix_metrics = searcher.compute_confusion_and_metrics(true_labels, [0, 1, 0], return_matrix_as_array=True)
+    assert "confusion_matrix" in matrix_metrics
+    cm = matrix_metrics["confusion_matrix"]
+    assert isinstance(cm, list)
+    assert len(cm) == len(matrix_metrics["labels"])  # square matrix
+
+
+def test_evaluate_classification_and_save_results(temp_db_dir):
+    """Test that evaluate_classification can auto-save metrics using a RAGVisualizer."""
+    from vision_rag.visualization import RAGVisualizer
+
+    # Prepare store and searcher
+    rag = ChromaRAGStore(collection_name="test_eval_save", persist_directory=temp_db_dir)
+    embeddings = np.array([
+        [1.0, 0.0],
+        [0.95, 0.0],
+        [10.0, 10.0],
+        [10.1, 10.0],
+    ], dtype=float)
+    metadatas = [{"label": 0}, {"label": 0}, {"label": 1}, {"label": 1}]
+    rag.add_embeddings(embeddings, metadatas=metadatas)
+
+    fake_encoder = FakeEncoder(embedding_dim=2)
+    searcher = ImageSearcher(encoder=fake_encoder, rag_store=rag)
+
+    queries = [np.array([1.05, 0.0]), np.array([10.05, 10.0]), np.array([1.2, 0.0])]
+    true_labels = [0, 1, 0]
+
+    # Use the output_dir argument instead of constructing a visualizer
+    results = searcher.evaluate_classification(
+        query_images=queries,
+        true_labels=true_labels,
+        n_results=3,
+        save_results=True,
+        output_dir=temp_db_dir,
+        filename_prefix="test_eval_auto_save",
+        to_csv=True,
+        to_json=True,
+        to_csv_matrix=True,
+    )
+
+    # Results should include saved_paths mapping
+    assert "saved_paths" in results
+    saved_paths = results["saved_paths"]
+    assert Path(saved_paths["json"]).exists()
+    assert Path(saved_paths["confusion_csv"]).exists()
+    assert Path(saved_paths["per_label_csv"]).exists()
+    assert Path(saved_paths["confusion_matrix_csv"]).exists()
