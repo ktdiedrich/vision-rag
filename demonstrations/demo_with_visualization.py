@@ -232,6 +232,17 @@ def main():
     print("\nGenerated files:")
     for viz_file in sorted(visualizer.output_dir.glob("*.png")):
         print(f"   - {viz_file.name}")
+    # Automatically evaluate and produce confusion matrix/metrics plots
+    print("\n🔢 Running evaluation and saving confusion matrix/metrics plots...")
+    true_labels_eval = [row["query_label"] for row in classification_results]
+    predicted_labels_eval = [row["predicted_label"] for row in classification_results]
+    metrics = searcher.evaluate_classification(true_labels=true_labels_eval, predicted_labels=predicted_labels_eval, save_results=True, output_dir=str(visualizer.output_dir), filename_prefix="06_demo_evaluation", to_csv=True, to_json=True, to_csv_matrix=True)
+    print(f"   ✅ Saved evaluation artifacts to: {metrics.get('saved_paths')}")
+    # Create PNG plots
+    cm_png = visualizer.plot_confusion_matrix(metrics["confusion"], labels=metrics["labels"], filename="06_confusion_matrix.png")
+    per_label_png = visualizer.plot_per_label_metrics(metrics["per_label"], labels_order=metrics["labels"], filename="06_per_label_metrics.png")
+    print(f"   ✅ Saved confusion matrix plot: {cm_png}")
+    print(f"   ✅ Saved per-label metrics plot: {per_label_png}")
     
 
 if __name__ == "__main__":

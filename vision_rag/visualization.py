@@ -12,6 +12,8 @@ from sklearn.decomposition import PCA
 from matplotlib.colors import ListedColormap, BoundaryNorm
 
 from .data_loader import get_human_readable_label
+import json
+import csv
 
 
 # Maximum number of labels to show on colorbar before omitting tick labels
@@ -382,3 +384,226 @@ class RAGVisualizer:
         plt.close()
         
         return str(output_path)
+
+    def plot_confusion_matrix(
+        self,
+        confusion: Union[Dict[Any, Dict[Any, int]], List[List[int]]],
+        labels: Optional[List[Any]] = None,
+        normalize: bool = False,
+        filename: str = "confusion_matrix.png",
+        title: str = "Confusion Matrix",
+        cmap: str = "Blues",
+        annotate: bool = True,
+    ) -> str:
+        """
+        Plot a confusion matrix as a heatmap and save to a file.
+
+        Args:
+            confusion: Nested dict (true_label -> pred_label -> count) or 2D list
+            labels: Order of labels corresponding to the matrix rows/columns; required when `confusion` is a 2D list
+            normalize: Whether to normalize rows to proportions
+            filename: Output filename
+            title: Plot title
+            cmap: Color map for the heatmap
+            annotate: Whether to annotate cells with numbers
+
+        Returns:
+            Path to saved image
+        """
+        # Convert nested dict to matrix if needed
+        if isinstance(confusion, list):
+            if labels is None:
+                raise ValueError("labels must be provided when passing a 2D list for confusion")
+            matrix = np.array(confusion, dtype=float)
+            label_order = list(labels)
+        else:
+            # If confusion is a nested dict, derive ordered labels unless provided
+            label_order = list(labels) if labels is not None else list(confusion.keys())
+            matrix = np.zeros((len(label_order), len(label_order)), dtype=float)
+            for i, t in enumerate(label_order):
+                row = confusion.get(t, {})
+                for j, p in enumerate(label_order):
+                    matrix[i, j] = row.get(p, 0)
+
+        # Optionally normalize rows
+        if normalize:
+            with np.errstate(all='ignore'):
+                row_sums = matrix.sum(axis=1, keepdims=True)
+                # Avoid division by zero
+                row_sums[row_sums == 0] = 1.0
+                norm_matrix = matrix / row_sums
+            display_matrix = norm_matrix
+            fmt = ".2f"
+        else:
+            # Ensure integer representation for raw counts so formatting 'd' works
+            if not np.issubdtype(matrix.dtype, np.integer):
+                try:
+                    display_matrix = matrix.astype(int)
+                except Exception:
+                    # Fallback to using float matrix with float format
+                    display_matrix = matrix
+                    fmt = ".0f"
+                else:
+                    fmt = "d"
+            else:
+                display_matrix = matrix
+                fmt = "d"
+
+        plt.figure(figsize=(8, 6))
+        ax = sns.heatmap(display_matrix, annot=annotate, fmt=fmt, cmap=cmap,
+                         xticklabels=label_order, yticklabels=label_order, cbar=True)
+        plt.xlabel("Predicted")
+        plt.ylabel("True")
+        plt.title(title, fontsize=14, fontweight='bold')
+        plt.tight_layout()
+
+        output_path = self.output_dir / filename
+        plt.savefig(output_path, dpi=150, bbox_inches='tight')
+        plt.close()
+        return str(output_path)
+
+    def plot_per_label_metrics(
+        self,
+        per_label: Dict[Union[int, str], Dict[str, float]],
+        labels_order: Optional[List[Union[int, str]]] = None,
+        filename: str = "per_label_metrics.png",
+        title: str = "Per-label Precision/Recall/F1",
+        figsize: tuple = (10, 6),
+    ) -> str:
+        """
+        Plot per-label precision, recall, and F1 in a grouped bar chart.
+
+        Args:
+            per_label: dict mapping label -> {precision, recall, f1}
+            labels_order: optional list defining the order of labels
+            filename: output filename
+            title: figure title
+            figsize: figure size
+
+        Returns:
+            Path to saved image
+        """
+        import pandas as _pd
+
+        label_order = labels_order if labels_order is not None else list(per_label.keys())
+
+        # Convert to DataFrame
+        rows = []
+        for lbl in label_order:
+            vals = per_label.get(lbl, {})
+            rows.append({"label": str(lbl), "precision": vals.get("precision", 0.0), "recall": vals.get("recall", 0.0), "f1": vals.get("f1", 0.0)})
+        df = _pd.DataFrame(rows)
+
+        # Melt for grouped bar plot
+        df_melt = df.melt(id_vars=["label"], value_vars=["precision", "recall", "f1"], var_name="metric", value_name="value")
+
+        plt.figure(figsize=figsize)
+        ax = sns.barplot(data=df_melt, x="label", y="value", hue="metric", palette="muted")
+        plt.xlabel("Label")
+        plt.ylabel("Score")
+        plt.ylim(0.0, 1.0)
+        plt.title(title, fontsize=14, fontweight='bold')
+        plt.legend(title="Metric")
+        plt.tight_layout()
+        output_path = self.output_dir / filename
+        plt.savefig(output_path, dpi=150, bbox_inches='tight')
+        plt.close()
+        return str(output_path)
+
+    def save_evaluation_results(
+        self,
+        metrics: Dict[str, Any],
+        filename_prefix: str = "evaluation",
+        to_json: bool = True,
+        to_csv: bool = True,
+        to_csv_matrix: bool = False,
+    ) -> Dict[str, str]:
+        """
+        Save evaluation metrics and confusion matrix to JSON and CSV files.
+
+        Arguments:
+            metrics: the dict returned from `ImageSearcher.compute_confusion_and_metrics`
+            filename_prefix: filename prefix used for saved files
+            to_json: whether to write a JSON file
+            to_csv: whether to write CSV files (confusion + per-class metrics)
+
+        Returns:
+            dict mapping file types to saved paths
+        """
+        saved_paths: Dict[str, str] = {}
+
+        # Ensure the metrics is serializable; convert numpy types if present
+        serializable_metrics = json.loads(json.dumps(metrics, default=lambda o: (o.tolist() if hasattr(o, 'tolist') else str(o))))
+
+        if to_json:
+            json_path = self.output_dir / f"{filename_prefix}.json"
+            with open(json_path, "w") as fh:
+                json.dump(serializable_metrics, fh, indent=2)
+            saved_paths["json"] = str(json_path)
+
+        # CSV export: confusion and per_class
+        if to_csv:
+            # Determine confusion structure
+            confusion = metrics.get("confusion")
+            labels = metrics.get("labels") or []
+
+            # If confusion is nested dict: dump triplets
+            if isinstance(confusion, dict):
+                conf_csv_path = self.output_dir / f"{filename_prefix}_confusion.csv"
+                with open(conf_csv_path, "w", newline="") as csvfile:
+                    writer = csv.writer(csvfile)
+                    writer.writerow(["true_label", "predicted_label", "count"])
+                    # Iterate labels order if present, else keys
+                    label_order = list(labels) if labels else list(confusion.keys())
+                    for t in label_order:
+                        row = confusion.get(t, {})
+                        for p in label_order:
+                            writer.writerow([t, p, row.get(p, 0)])
+                saved_paths["confusion_csv"] = str(conf_csv_path)
+                if to_csv_matrix:
+                    # Also write out matrix header format
+                    matrix_csv_path = self.output_dir / f"{filename_prefix}_confusion_matrix.csv"
+                    with open(matrix_csv_path, "w", newline="") as mfile:
+                        writer = csv.writer(mfile)
+                        # Write header: empty cell + predicted labels
+                        writer.writerow([""] + [str(p) for p in label_order])
+                        for t in label_order:
+                            row = confusion.get(t, {})
+                            writer.writerow([str(t)] + [row.get(p, 0) for p in label_order])
+                    saved_paths["confusion_matrix_csv"] = str(matrix_csv_path)
+            elif isinstance(confusion, list):
+                # confusion is a 2D list
+                if not labels:
+                    raise ValueError("labels must be provided when passing matrix list for CSV export")
+                conf_csv_path = self.output_dir / f"{filename_prefix}_confusion.csv"
+                with open(conf_csv_path, "w", newline="") as csvfile:
+                    writer = csv.writer(csvfile)
+                    writer.writerow(["true_label", "predicted_label", "count"])
+                    for i, t in enumerate(labels):
+                        row = confusion[i]
+                        for j, p in enumerate(labels):
+                            writer.writerow([t, p, row[j]])
+                saved_paths["confusion_csv"] = str(conf_csv_path)
+                if to_csv_matrix:
+                    matrix_csv_path = self.output_dir / f"{filename_prefix}_confusion_matrix.csv"
+                    with open(matrix_csv_path, "w", newline="") as mfile:
+                        writer = csv.writer(mfile)
+                        writer.writerow([""] + [str(p) for p in labels])
+                        for i, t in enumerate(labels):
+                            row = confusion[i]
+                            writer.writerow([str(t)] + [row[j] for j in range(len(labels))])
+                    saved_paths["confusion_matrix_csv"] = str(matrix_csv_path)
+
+            # Write per-class metrics
+            per_label = metrics.get("per_label") or {}
+            per_csv_path = self.output_dir / f"{filename_prefix}_per_label.csv"
+            with open(per_csv_path, "w", newline="") as csvfile:
+                writer = csv.writer(csvfile)
+                writer.writerow(["label", "precision", "recall", "f1"])
+                label_order = list(labels) if labels else list(per_label.keys())
+                for lbl in label_order:
+                    vals = per_label.get(lbl, {})
+                    writer.writerow([lbl, vals.get("precision", 0.0), vals.get("recall", 0.0), vals.get("f1", 0.0)])
+            saved_paths["per_label_csv"] = str(per_csv_path)
+
+        return saved_paths

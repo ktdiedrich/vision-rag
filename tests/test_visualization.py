@@ -477,6 +477,134 @@ def test_save_embedding_space_many_labels(temp_output_dir):
     assert Path(output_path).exists()
 
 
+def test_plot_confusion_matrix_from_confusion_dict(temp_output_dir):
+    """Test plotting confusion matrix given a nested dictionary and saving PNG."""
+    visualizer = RAGVisualizer(output_dir=temp_output_dir)
+    confusion = {
+        0: {0: 2, 1: 1},
+        1: {0: 0, 1: 3},
+    }
+    labels = [0, 1]
+    output_path = visualizer.plot_confusion_matrix(confusion, labels=labels, filename="test_confusion_dict.png")
+    assert Path(output_path).exists()
+    assert "test_confusion_dict.png" in output_path
+
+
+def test_plot_confusion_matrix_from_matrix_list(temp_output_dir):
+    """Test plotting confusion matrix given a 2D list and explicit label ordering."""
+    visualizer = RAGVisualizer(output_dir=temp_output_dir)
+    matrix = [[5, 1], [2, 4]]
+    labels = ["cat", "dog"]
+    output_path = visualizer.plot_confusion_matrix(matrix, labels=labels, filename="test_confusion_matrix.png")
+    assert Path(output_path).exists()
+    assert "test_confusion_matrix.png" in output_path
+
+
+def test_plot_confusion_matrix_normalized(temp_output_dir):
+    """Test that normalization works and returns a saved PNG."""
+    visualizer = RAGVisualizer(output_dir=temp_output_dir)
+    confusion = {
+        0: {0: 1, 1: 1},
+        1: {0: 2, 1: 1},
+    }
+    labels = [0, 1]
+    output_path = visualizer.plot_confusion_matrix(confusion, labels=labels, normalize=True, filename="test_confusion_norm.png")
+    assert Path(output_path).exists()
+    assert "test_confusion_norm.png" in output_path
+
+
+def test_plot_per_label_metrics(temp_output_dir):
+    """Test plotting per-label metrics and saving PNG."""
+    visualizer = RAGVisualizer(output_dir=temp_output_dir)
+    per_label = {
+        0: {"precision": 0.8, "recall": 0.6, "f1": 0.69},
+        1: {"precision": 0.9, "recall": 1.0, "f1": 0.95},
+    }
+    output_path = visualizer.plot_per_label_metrics(per_label, labels_order=[0, 1], filename="test_per_label.png")
+    assert Path(output_path).exists()
+    assert "test_per_label.png" in output_path
+
+
+def test_save_evaluation_results_json_and_csv(temp_output_dir):
+    """Test saving evaluation metrics and confusion matrix to JSON and CSV files."""
+    from vision_rag.search import ImageSearcher
+
+    visualizer = RAGVisualizer(output_dir=temp_output_dir)
+
+    # Construct a simple confusion/matrix via compute_confusion_and_metrics
+    fake_searcher = ImageSearcher.__new__(ImageSearcher)
+    true = [0, 0, 1, 1]
+    pred = [0, 1, 1, 1]
+    metrics = ImageSearcher.compute_confusion_and_metrics(fake_searcher, true, pred)
+
+    saved = visualizer.save_evaluation_results(metrics, filename_prefix="test_evaluation")
+    # Assert JSON and CSV are saved
+    assert "json" in saved and saved["json"].endswith("test_evaluation.json")
+    assert Path(saved["json"]).exists()
+    assert "confusion_csv" in saved and Path(saved["confusion_csv"]).exists()
+    assert "per_label_csv" in saved and Path(saved["per_label_csv"]).exists()
+
+    # Validate CSV contents for per_label
+    import csv
+    with open(saved["per_label_csv"]) as fh:
+        reader = csv.DictReader(fh)
+        rows = list(reader)
+        assert any(r["label"] == "0" for r in rows) and any(r["label"] == "1" for r in rows)
+
+
+def test_save_evaluation_results_matrix_csv_for_dict(temp_output_dir):
+    """Test that the confusion matrix CSV output is written for dict confusion input."""
+    from vision_rag.search import ImageSearcher
+
+    visualizer = RAGVisualizer(output_dir=temp_output_dir)
+    fake_searcher = ImageSearcher.__new__(ImageSearcher)
+    true = [0, 0, 1, 1]
+    pred = [0, 1, 1, 1]
+    metrics = ImageSearcher.compute_confusion_and_metrics(fake_searcher, true, pred)
+
+    saved = visualizer.save_evaluation_results(metrics, filename_prefix="test_eval_matrix_dict", to_csv_matrix=True)
+    assert "confusion_matrix_csv" in saved
+    assert Path(saved["confusion_matrix_csv"]).exists()
+
+    # Check header and data in CSV
+    import csv
+    with open(saved["confusion_matrix_csv"]) as fh:
+        reader = csv.reader(fh)
+        rows = list(reader)
+        # Header has blank then predicted labels
+        assert rows[0][0] == ""
+        assert rows[0][1:] == [str(lbl) for lbl in metrics["labels"]]
+        # Check first data row label and values
+        assert rows[1][0] == str(metrics["labels"][0])
+
+
+def test_save_evaluation_results_matrix_csv_for_matrix_list(temp_output_dir):
+    """Test that matrix CSV output is written when confusion is already a 2D list."""
+    visualizer = RAGVisualizer(output_dir=temp_output_dir)
+    # Create a 2x2 matrix where labels are strings
+    metrics = {
+        "confusion": [[2, 3], [1, 4]],
+        "labels": ["A", "B"],
+        "per_label": {"A": {"precision": 0.5, "recall": 0.5, "f1": 0.5}, "B": {"precision": 0.8, "recall": 0.9, "f1": 0.85}},
+        "accuracy": 0.6,
+        "macro": {"precision": 0.65, "recall": 0.7, "f1": 0.675},
+        "micro": {"precision": 0.6, "recall": 0.6, "f1": 0.6}
+    }
+    saved = visualizer.save_evaluation_results(metrics, filename_prefix="test_eval_matrix_list", to_csv_matrix=True)
+    assert "confusion_matrix_csv" in saved
+    assert Path(saved["confusion_matrix_csv"]).exists()
+
+    # Validate header
+    import csv
+    with open(saved["confusion_matrix_csv"]) as fh:
+        reader = csv.reader(fh)
+        rows = list(reader)
+        assert rows[0][1:] == ["A", "B"]
+        # Validate row values
+        assert rows[1] == ["A", "2", "3"]
+        assert rows[2] == ["B", "1", "4"]
+
+
 def test_visualizer_creates_output_directory(temp_output_dir):
     """Test that visualizer creates nested output directory if it doesn't exist."""
     nested_dir = Path(temp_output_dir) / "nested" / "directory"
