@@ -389,6 +389,8 @@ class RAGVisualizer:
         self,
         confusion: Union[Dict[Any, Dict[Any, int]], List[List[int]]],
         labels: Optional[List[Any]] = None,
+        label_names: Optional[List[str]] = None,
+        dataset_name: Optional[str] = None,
         normalize: bool = False,
         filename: str = "confusion_matrix.png",
         title: str = "Confusion Matrix",
@@ -410,6 +412,9 @@ class RAGVisualizer:
         Returns:
             Path to saved image
         """
+        # Determine dataset_name for human readable mapping
+        ds_name = dataset_name if dataset_name is not None else MEDMNIST_DATASET
+
         # Convert nested dict to matrix if needed
         if isinstance(confusion, list):
             if labels is None:
@@ -424,6 +429,21 @@ class RAGVisualizer:
                 row = confusion.get(t, {})
                 for j, p in enumerate(label_order):
                     matrix[i, j] = row.get(p, 0)
+
+        # Create human-readable tick labels
+        if label_names is not None:
+            tick_labels = list(label_names)
+        else:
+            # If labels are numeric, get human-readable names for the dataset
+            tick_labels = []
+            for lab in label_order:
+                if isinstance(lab, int):
+                    try:
+                        tick_labels.append(get_human_readable_label(int(lab), dataset_name=ds_name))
+                    except Exception:
+                        tick_labels.append(str(lab))
+                else:
+                    tick_labels.append(str(lab))
 
         # Optionally normalize rows
         if normalize:
@@ -451,7 +471,7 @@ class RAGVisualizer:
 
         plt.figure(figsize=(8, 6))
         ax = sns.heatmap(display_matrix, annot=annotate, fmt=fmt, cmap=cmap,
-                         xticklabels=label_order, yticklabels=label_order, cbar=True)
+                 xticklabels=tick_labels, yticklabels=tick_labels, cbar=True)
         plt.xlabel("Predicted")
         plt.ylabel("True")
         plt.title(title, fontsize=14, fontweight='bold')
@@ -505,6 +525,14 @@ class RAGVisualizer:
         plt.ylim(0.0, 1.0)
         plt.title(title, fontsize=14, fontweight='bold')
         plt.legend(title="Metric")
+        # Replace x tick labels with human readable names if available
+        ds_name = MEDMNIST_DATASET
+        try:
+            tick_names = [get_human_readable_label(int(lbl), dataset_name=ds_name) if lbl.isdigit() else lbl for lbl in df["label"].astype(str)]
+        except Exception:
+            # Fallback to original labels
+            tick_names = df["label"].astype(str).tolist()
+        ax.set_xticklabels(tick_names)
         plt.tight_layout()
         # Optionally annotate bar values
         if annotate:
