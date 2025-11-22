@@ -575,7 +575,17 @@ class RAGVisualizer:
         y_true = np.array(true_labels)
         y_scores = np.array(scores)
 
-        fpr, tpr, _ = roc_curve(y_true, y_scores, pos_label=pos_label)
+        # If y_true includes multi-class labels, binarize according to pos_label
+        if y_true.ndim == 1 and len(np.unique(y_true)) > 2:
+            y_true_binary = (y_true == pos_label).astype(int)
+        else:
+            y_true_binary = y_true
+
+        # For clarity ensure y_scores is a 1-d vector (required by sklearn for binary curves)
+        if y_scores.ndim != 1:
+            y_scores = y_scores.ravel()
+
+        fpr, tpr, _ = roc_curve(y_true_binary, y_scores, pos_label=pos_label)
         roc_auc = auc(fpr, tpr)
 
         plt.figure(figsize=figsize)
@@ -620,8 +630,18 @@ class RAGVisualizer:
         y_true = np.array(true_labels)
         y_scores = np.array(scores)
 
-        precision, recall, _ = precision_recall_curve(y_true, y_scores, pos_label=pos_label)
-        ap = average_precision_score(y_true, y_scores)
+        # If y_true includes multi-class labels, binarize according to pos_label
+        if y_true.ndim == 1 and len(np.unique(y_true)) > 2:
+            y_true_binary = (y_true == pos_label).astype(int)
+        else:
+            y_true_binary = y_true
+
+        # Ensure y_scores is 1-D (sklearn expects 1D score array for binary precision/recall)
+        if y_scores.ndim != 1:
+            y_scores = y_scores.ravel()
+
+        precision, recall, _ = precision_recall_curve(y_true_binary, y_scores, pos_label=pos_label)
+        ap = average_precision_score(y_true_binary, y_scores)
 
         plt.figure(figsize=figsize)
         plt.plot(recall, precision, color='darkgreen', lw=2, label=f'AP = {ap:.2f}')

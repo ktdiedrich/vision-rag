@@ -525,6 +525,19 @@ def test_plot_roc_and_pr_curves(temp_output_dir):
     assert Path(pr_path).exists()
 
 
+def test_plot_roc_and_pr_curves_multiclass_binarize(temp_output_dir):
+    """Test ROC/PR plotting for multi-class labels by binarizing a positive class."""
+    visualizer = RAGVisualizer(output_dir=temp_output_dir)
+    # Simulate a multiclass scenario where class '1' is considered positive
+    true_labels = [0, 1, 2, 1, 0, 2, 1]
+    # Scores represent classifier's confidence for class '1'
+    scores = [0.1, 0.9, 0.2, 0.8, 0.1, 0.3, 0.7]
+    roc_path = visualizer.plot_roc_curve(true_labels, scores, pos_label=1, filename="test_roc_multi.png")
+    pr_path = visualizer.plot_precision_recall_curve(true_labels, scores, pos_label=1, filename="test_pr_multi.png")
+    assert Path(roc_path).exists()
+    assert Path(pr_path).exists()
+
+
 def test_plot_per_label_metrics(temp_output_dir):
     """Test plotting per-label metrics and saving PNG."""
     visualizer = RAGVisualizer(output_dir=temp_output_dir)
