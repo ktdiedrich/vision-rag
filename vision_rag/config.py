@@ -3,7 +3,7 @@
 import os
 from typing import Dict, Any
 
-MEDMNIST_DATASET_DEFAULT: str = "PneumoniaMNIST"
+MEDMNIST_DATASET_DEFAULT: str = "OCTMNIST"
 # Environment variable configuration
 CLIP_MODEL_NAME = os.getenv("VISION_RAG_CLIP_MODEL", "clip-ViT-B-32")
 DINO_MODEL_NAME = os.getenv("VISION_RAG_DINO_MODEL", "facebook/dino-vits8")
