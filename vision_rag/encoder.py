@@ -190,11 +190,13 @@ class DINOImageEncoder(BaseImageEncoder):
     Example model name: ``facebook/dino-vits8``
     """
 
-    def __init__(self, model_name: str = "facebook/dino-vits8", device: Union[str, torch.device] | None = None):
+    def __init__(self, model_name: str = "facebook/dino-vits8", device: Union[str, torch.device] | None = None, **hf_kwargs):
         self.model_name = model_name
         # Use AutoImageProcessor (newer API; replaces AutoFeatureExtractor)
         self.feature_extractor = AutoImageProcessor.from_pretrained(model_name)
-        self.model = AutoModel.from_pretrained(model_name)
+        # Pass any HF kwargs to AutoModel.from_pretrained so we can load a fine-tuned
+        # checkpoint even if it contains extra classification head weights.
+        self.model = AutoModel.from_pretrained(model_name, **hf_kwargs)
 
         super().__init__(device=device)
 

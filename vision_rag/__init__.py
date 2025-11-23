@@ -18,6 +18,7 @@ from .data_loader import (
     get_human_readable_label,
 )
 from .encoder import CLIPImageEncoder, build_encoder
+from .dicom_classifier import DICOMClassifier
 from .rag_store import ChromaRAGStore
 from .image_store import ImageFileStore
 from .search import ImageSearcher
@@ -51,5 +52,6 @@ __all__ = [
     "decode_base64_image",
     "encode_image_to_base64",
     "RAGVisualizer",
+    "DICOMClassifier",
 ]
 
