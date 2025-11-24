@@ -136,7 +136,7 @@ class TestMCPServerInitialization:
         server = VisionRAGMCPServer(
             collection_name="test_custom_dirs",
             persist_directory="chroma_db_test_mcp_server",
-            image_store_dir="./custom_images"
+            image_store_dir="./image_store_custom_mcp"
         )
         
         assert server.rag_store.collection_name == "test_custom_dirs"
