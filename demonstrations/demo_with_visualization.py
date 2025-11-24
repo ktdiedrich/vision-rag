@@ -55,7 +55,7 @@ def main():
     print(f"   Validation set: {len(val_images)} images")
     print(f"   Test set: {len(test_images)} images")
 
-    def verify_checkpoint_dir(ckpt_path: str) -> None:
+    def verify_checkpoint_dir(ckpt_path: str, strict: bool = False) -> bool:
         """Verify the HF checkpoint directory contains common files and raise if missing.
 
         This helper checks locally-saved checkpoints only. If `ckpt_path` is a
@@ -65,22 +65,33 @@ def main():
         ckpt_p = Path(ckpt_path)
         if not ckpt_p.exists():
             print(f"   ⚠️ Checkpoint path {ckpt_path} does not exist locally; cannot verify files.")
-            return
+            return False
         # Basic expected files from transformers' Trainer.save_model and image processors
         expected_any = ["pytorch_model.bin", "pytorch_model.safetensors"]
         expected_all = ["config.json", "training_args.bin", "preprocessor_config.json"]
         found_any = any((ckpt_p / fname).exists() for fname in expected_any)
         missing = [f for f in expected_all if not (ckpt_p / f).exists()]
         if not found_any:
-            raise AssertionError(f"Expected one of {expected_any} in checkpoint directory {ckpt_path} but none were found.")
+            msg = f"Expected one of {expected_any} in checkpoint directory {ckpt_path} but none were found."
+            if strict:
+                raise AssertionError(msg)
+            else:
+                print(f"   ⚠️ {msg}")
+                return False
         if missing:
-            raise AssertionError(f"Missing expected checkpoint files in {ckpt_path}: {missing}")
+            msg = f"Missing expected checkpoint files in {ckpt_path}: {missing}"
+            if strict:
+                raise AssertionError(msg)
+            else:
+                print(f"   ⚠️ {msg}")
+                return False
         # Print the files we found
         print(f"   ✅ Verified checkpoint at {ckpt_path} contains expected files:")
         for fname in expected_any + expected_all:
             fpath = ckpt_p / fname
             if fpath.exists():
                 print(f"     - {fpath}")
+        return True
     
     # Step 2: Visualize sample input images that will go into RAG store
     print("\n🖼️  Visualizing sample input images for RAG store...")
@@ -123,7 +134,7 @@ def main():
         try:
             # If checkpoint is a local path, verify expected files exist
             if os.path.isdir(ckpt_dir):
-                verify_checkpoint_dir(ckpt_dir)
+                verify_checkpoint_dir(ckpt_dir, strict=False)
             encoder = build_encoder(encoder_type="dino", model_name=ckpt_dir, ignore_mismatched_sizes=True)
             if ENCODER_TYPE and ENCODER_TYPE.lower().startswith("dino"):
                 print(f"   Using fine-tuned DINO model from: {ckpt_dir}")
@@ -157,8 +168,8 @@ def main():
             logging_steps=10,
         )
         print(f"   ✅ DINO classifier trained and saved to: {ckpt_dir}")
-        # Verify the saved checkpoint contains expected artifacts
-        verify_checkpoint_dir(ckpt_dir)
+        # Verify the saved checkpoint contains expected artifacts (strict)
+        verify_checkpoint_dir(ckpt_dir, strict=True)
         encoder = build_encoder(encoder_type="dino", model_name=ckpt_dir, ignore_mismatched_sizes=True)
         if ENCODER_TYPE and ENCODER_TYPE.lower().startswith("dino"):
             print(f"   Using fine-tuned DINO model: {ckpt_dir}")
