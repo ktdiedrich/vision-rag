@@ -59,6 +59,10 @@ class _DICOMDataset(Dataset):
         elif not isinstance(img, Image.Image):
             # Attempt to convert
             img = Image.fromarray(np.asarray(img).astype(np.uint8)).convert("RGB")
+        else:
+            # If it's already a PIL Image, ensure it's RGB (avoid ImageProcessor errors)
+            if img.mode != "RGB":
+                img = img.convert("RGB")
 
         # Prepare inputs (pixel_values) using the image processor
         enc = self.processor(images=img, return_tensors="pt")
