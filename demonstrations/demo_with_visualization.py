@@ -67,7 +67,17 @@ def main():
             print(f"   ⚠️ Checkpoint path {ckpt_path} does not exist locally; cannot verify files.")
             return False
         # Basic expected files from transformers' Trainer.save_model and image processors
-        expected_any = ["pytorch_model.bin", "pytorch_model.safetensors"]
+        # Accept multiple common final model filenames which transformers' Trainer
+        # and newer save backends might produce. Historically the HF Trainer
+        # saved `pytorch_model.bin` (PyTorch) or `pytorch_model.safetensors`.
+        # Some `save_pretrained` implementations (and newer backends) may write
+        # `model.safetensors` instead — accept that too so the demo doesn't
+        # fail when Trainer writes `model.safetensors`.
+        expected_any = [
+            "pytorch_model.bin",
+            "pytorch_model.safetensors",
+            "model.safetensors",
+        ]
         expected_all = ["config.json", "training_args.bin", "preprocessor_config.json"]
         found_any = any((ckpt_p / fname).exists() for fname in expected_any)
         missing = [f for f in expected_all if not (ckpt_p / f).exists()]
