@@ -26,8 +26,11 @@ from vision_rag import (
     ImageSearcher,
     RAGVisualizer,
     ImageFileStore,
+    DICOMClassifier,
+    get_dataset_config,
 )
 from vision_rag.config import ENCODER_TYPE, DINO_MODEL_NAME, NEAREST_NEIGHBORS, MEDMNIST_DATASET, LARGE_SUBSET
+import os
 import csv
 import json
 
@@ -45,10 +48,60 @@ def main():
     # Step 1: Load data
     print(f"\n📥 Loading {MEDMNIST_DATASET} data...")
     train_images, train_labels = load_medmnist_data(dataset_name=MEDMNIST_DATASET, split="train")
+    val_images, val_labels = load_medmnist_data(dataset_name=MEDMNIST_DATASET, split="val")
     test_images, test_labels = load_medmnist_data(dataset_name=MEDMNIST_DATASET, split="test")
     
     print(f"   Training set: {len(train_images)} images")
+    print(f"   Validation set: {len(val_images)} images")
     print(f"   Test set: {len(test_images)} images")
+
+    def verify_checkpoint_dir(ckpt_path: str, strict: bool = False) -> bool:
+        """Verify the HF checkpoint directory contains common files and raise if missing.
+
+        This helper checks locally-saved checkpoints only. If `ckpt_path` is a
+        remote HF repo id (not a local dir) the function prints a message and
+        returns without asserting.
+        """
+        ckpt_p = Path(ckpt_path)
+        if not ckpt_p.exists():
+            print(f"   ⚠️ Checkpoint path {ckpt_path} does not exist locally; cannot verify files.")
+            return False
+        # Basic expected files from transformers' Trainer.save_model and image processors
+        # Accept multiple common final model filenames which transformers' Trainer
+        # and newer save backends might produce. Historically the HF Trainer
+        # saved `pytorch_model.bin` (PyTorch) or `pytorch_model.safetensors`.
+        # Some `save_pretrained` implementations (and newer backends) may write
+        # `model.safetensors` instead — accept that too so the demo doesn't
+        # fail when Trainer writes `model.safetensors`.
+        expected_any = [
+            "pytorch_model.bin",
+            "pytorch_model.safetensors",
+            "model.safetensors",
+        ]
+        expected_all = ["config.json", "training_args.bin", "preprocessor_config.json"]
+        found_any = any((ckpt_p / fname).exists() for fname in expected_any)
+        missing = [f for f in expected_all if not (ckpt_p / f).exists()]
+        if not found_any:
+            msg = f"Expected one of {expected_any} in checkpoint directory {ckpt_path} but none were found."
+            if strict:
+                raise AssertionError(msg)
+            else:
+                print(f"   ⚠️ {msg}")
+                return False
+        if missing:
+            msg = f"Missing expected checkpoint files in {ckpt_path}: {missing}"
+            if strict:
+                raise AssertionError(msg)
+            else:
+                print(f"   ⚠️ {msg}")
+                return False
+        # Print the files we found
+        print(f"   ✅ Verified checkpoint at {ckpt_path} contains expected files:")
+        for fname in expected_any + expected_all:
+            fpath = ckpt_p / fname
+            if fpath.exists():
+                print(f"     - {fpath}")
+        return True
     
     # Step 2: Visualize sample input images that will go into RAG store
     print("\n🖼️  Visualizing sample input images for RAG store...")
@@ -72,12 +125,73 @@ def main():
     )
     print(f"   ✅ Saved label distribution: {label_dist_path}")
     
-    # Step 4: Initialize encoder and encode subset of training images
-    print("\n🧠 Initializing encoder via build_encoder() using configured ENCODER_TYPE...")
-    encoder = build_encoder(encoder_type="dino")  # uses ENCODER_TYPE from config; set VISION_RAG_ENCODER='dino' to use DINO
-    if ENCODER_TYPE and ENCODER_TYPE.lower().startswith("dino"):
-        print(f"   Using DINO model: {DINO_MODEL_NAME}")
-    print(f"   Embedding dimension: {encoder.embedding_dimension}")
+    # Optionally train a DINO classifier before using the model as an encoder.
+    # To enable, set environment variable VISION_RAG_TRAIN_DINO=true
+    # Allow either using an existing checkpoint path or training a new checkpoint
+    train_dino_classifier = os.getenv("VISION_RAG_TRAIN_DINO", "false").lower() in ("1", "true", "yes")
+    default_ckpt_dir = "./dino_finetuned"
+    ckpt_env = os.getenv("VISION_RAG_DINO_CHECKPOINT")
+    ckpt_dir = ckpt_env if ckpt_env else default_ckpt_dir
+    # Ensure encoder is always defined in this local scope for fallback checks
+    encoder = None
+    # If a checkpoint directory is present and the user didn't request training,
+    # load the fine-tuned checkpoint directly for embeddings.
+    # If training is not requested and either a local default checkpoint exists
+    # or the user provided a checkpoint/model name via environment, attempt
+    # to load it for embeddings.
+    if not train_dino_classifier and (ckpt_env is not None or os.path.isdir(ckpt_dir)):
+        print(f"\n⚡ Found existing fine-tuned checkpoint or model '{ckpt_dir}', attempting to load it for embeddings...")
+        try:
+            # If checkpoint is a local path, verify expected files exist
+            if os.path.isdir(ckpt_dir):
+                verify_checkpoint_dir(ckpt_dir, strict=False)
+            encoder = build_encoder(encoder_type="dino", model_name=ckpt_dir, ignore_mismatched_sizes=True)
+            if ENCODER_TYPE and ENCODER_TYPE.lower().startswith("dino"):
+                print(f"   Using fine-tuned DINO model from: {ckpt_dir}")
+            print(f"   Embedding dimension: {encoder.embedding_dimension}")
+        except Exception as e:
+            print(f"   ⚠️ Failed to load checkpoint {ckpt_dir}: {e}. Falling back to base pre-trained DINO model.")
+            train_dino_classifier = False
+            encoder = None
+
+    if train_dino_classifier:
+        print("\n⚡ Training a DINO classifier on a small subset before using the model for embeddings...")
+        num_classes = get_dataset_config(MEDMNIST_DATASET)["n_classes"]
+        dicom_classifier = DICOMClassifier(model_name=DINO_MODEL_NAME, num_labels=num_classes)
+        # Use a portion for demo training
+        train_n = min(LARGE_SUBSET, len(train_images))
+        small_train_imgs = [get_image_from_array(train_images[i]) for i in range(train_n)]
+        small_train_lbls = [int(train_labels[i]) for i in range(train_n)]
+        val_n = min(50, len(train_images) - train_n)
+        val_imgs, val_lbls = None, None
+        if val_n > 0:
+            val_imgs = [get_image_from_array(train_images[i + train_n]) for i in range(val_n)]
+            val_lbls = [int(train_labels[i + train_n]) for i in range(val_n)]
+        _, ckpt_dir = dicom_classifier.fit(
+            small_train_imgs,
+            small_train_lbls,
+            val_images=val_imgs,
+            val_labels=val_lbls,
+            output_dir="./dino_finetuned",
+            num_train_epochs=1,
+            per_device_train_batch_size=8,
+            logging_steps=10,
+        )
+        print(f"   ✅ DINO classifier trained and saved to: {ckpt_dir}")
+        # Verify the saved checkpoint contains expected artifacts (strict)
+        verify_checkpoint_dir(ckpt_dir, strict=True)
+        encoder = build_encoder(encoder_type="dino", model_name=ckpt_dir, ignore_mismatched_sizes=True)
+        if ENCODER_TYPE and ENCODER_TYPE.lower().startswith("dino"):
+            print(f"   Using fine-tuned DINO model: {ckpt_dir}")
+        print(f"   Embedding dimension: {encoder.embedding_dimension}")
+    else:
+        # Step 4: Initialize encoder and encode subset of training images
+        print("\n🧠 Initializing encoder via build_encoder() using configured ENCODER_TYPE...")
+        if encoder is None:
+            encoder = build_encoder(encoder_type="dino")  # uses ENCODER_TYPE from config; set VISION_RAG_ENCODER='dino' to use DINO
+        if ENCODER_TYPE and ENCODER_TYPE.lower().startswith("dino"):
+            print(f"   Using DINO model: {DINO_MODEL_NAME}")
+        print(f"   Embedding dimension: {encoder.embedding_dimension}")
     
     # Use a smaller subset for demonstration to speed up processing
     subset_indices = np.random.choice(len(train_images), size=LARGE_SUBSET, replace=False)
