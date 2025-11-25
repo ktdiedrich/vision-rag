@@ -158,8 +158,8 @@ def main():
         print("\n⚡ Training a DINO classifier on a small subset before using the model for embeddings...")
         num_classes = get_dataset_config(MEDMNIST_DATASET)["n_classes"]
         dicom_classifier = DICOMClassifier(model_name=DINO_MODEL_NAME, num_labels=num_classes)
-        # Use a small portion for fast demo training
-        train_n = min(200, len(train_images))
+        # Use a portion for demo training
+        train_n = min(LARGE_SUBSET, len(train_images))
         small_train_imgs = [get_image_from_array(train_images[i]) for i in range(train_n)]
         small_train_lbls = [int(train_labels[i]) for i in range(train_n)]
         val_n = min(50, len(train_images) - train_n)
